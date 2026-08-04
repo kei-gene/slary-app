@@ -369,9 +369,19 @@ function renderWorkplaces() {
         <div class="workplace-meta">給料日: ${w.payday}日 ・ 締め日: ${w.closingDay}日</div>
         <div class="workplace-meta">時給ルール ${w.rates.length}件</div>
       </div>
-      <div class="chevron">›</div>
+      <div class="workplace-card-right">
+        <span class="workplace-edit" data-edit-workplace="${w.id}">✎</span>
+        <span class="chevron">›</span>
+      </div>
     </div>
   `).join("");
+
+  container.querySelectorAll("[data-edit-workplace]").forEach((el) => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      openWorkplaceModal(state.workplaces.find((w) => w.id === el.dataset.editWorkplace));
+    };
+  });
 
   container.querySelectorAll("[data-open]").forEach((el) => {
     el.onclick = () => { state.activeWorkplaceId = el.dataset.open; switchTab("rates"); };
@@ -459,6 +469,20 @@ function closeRateModal() {
   document.getElementById("rate-modal").classList.add("hidden");
 }
 
+// ---------- WORKPLACE EDIT MODAL ----------
+function openWorkplaceModal(workplace) {
+  state.editingWorkplaceId = workplace.id;
+  document.getElementById("wp-modal-name").value = workplace.name;
+  document.getElementById("wp-modal-payday").value = workplace.payday;
+  document.getElementById("wp-modal-closing").value = workplace.closingDay;
+  document.getElementById("workplace-modal").classList.remove("hidden");
+}
+
+function closeWorkplaceModal() {
+  state.editingWorkplaceId = null;
+  document.getElementById("workplace-modal").classList.add("hidden");
+}
+
 // ---------- SETTINGS ----------
 function renderSettings() {
   document.getElementById("settings-goal").value = state.monthlyGoal;
@@ -532,6 +556,20 @@ function init() {
     save();
     closeRateModal();
     renderRates();
+  };
+
+  document.getElementById("wp-modal-close").onclick = closeWorkplaceModal;
+  document.getElementById("wp-modal-save").onclick = () => {
+    const name = document.getElementById("wp-modal-name").value.trim();
+    if (!name) { alert("勤務先名を入力してください"); return; }
+    const wp = state.workplaces.find((w) => w.id === state.editingWorkplaceId);
+    wp.name = name;
+    wp.payday = Number(document.getElementById("wp-modal-payday").value) || wp.payday;
+    wp.closingDay = Number(document.getElementById("wp-modal-closing").value) || wp.closingDay;
+    save();
+    closeWorkplaceModal();
+    renderWorkplaces();
+    if (state.tab === "rates") renderRates();
   };
 
   switchTab("home");

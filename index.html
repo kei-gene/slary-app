@@ -131,6 +131,29 @@
     </div>
   </div>
 
+  <!-- 勤務先編集モーダル -->
+  <div id="workplace-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">勤務先を編集</span>
+        <span id="wp-modal-close" class="modal-close">✕</span>
+      </div>
+      <div class="section-label small">勤務先名</div>
+      <input type="text" id="wp-modal-name" class="modal-input full" placeholder="例: コンビニA">
+      <div class="two-col" style="margin-top:12px">
+        <div>
+          <div class="section-label small">給料日</div>
+          <input type="number" id="wp-modal-payday" class="modal-input" min="1" max="31">
+        </div>
+        <div>
+          <div class="section-label small">締め日</div>
+          <input type="number" id="wp-modal-closing" class="modal-input" min="1" max="31">
+        </div>
+      </div>
+      <button id="wp-modal-save" class="btn-primary" style="margin-top:16px">保存</button>
+    </div>
+  </div>
+
   <!-- タブバー -->
   <nav class="tabbar">
     <button class="tab-item" data-tab="home">
