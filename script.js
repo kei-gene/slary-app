@@ -389,10 +389,12 @@ function renderWorkplaces() {
 
   document.getElementById("workplace-add-btn").onclick = () => {
     const id = `w${Date.now()}`;
-    state.workplaces.push({ id, name: "新しい勤務先", payday: 25, closingDay: 20, rates: [] });
+    const newWorkplace = { id, name: "新しい勤務先", payday: 25, closingDay: 20, rates: [] };
+    state.workplaces.push(newWorkplace);
     save();
     state.activeWorkplaceId = id;
     switchTab("rates");
+    openWorkplaceModal(newWorkplace);
   };
 }
 
@@ -403,6 +405,7 @@ function renderRates() {
 
   document.getElementById("rates-title").textContent = `${wp.name} の時給ルール`;
   document.getElementById("rates-back").onclick = () => switchTab("workplaces");
+  document.getElementById("rates-edit-workplace").onclick = () => openWorkplaceModal(wp);
 
   const overlapping = findOverlaps(wp.rates);
   const groups = [{ key: "weekday", label: "月〜土" }, { key: "holiday", label: "日曜・祝日" }];
