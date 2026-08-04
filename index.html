@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>時給・給与管理アプリ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ホーム -->
+  <section id="screen-home" class="screen active">
+    <div id="home-content"></div>
+  </section>
+
+  <!-- 履歴 -->
+  <section id="screen-history" class="screen">
+    <div class="header-title">勤務履歴</div>
+    <div id="history-list" class="list-pad"></div>
+  </section>
+
+  <!-- シフト追加/編集 -->
+  <section id="screen-add" class="screen">
+    <div class="nav-bar">
+      <span class="nav-btn" id="add-cancel">キャンセル</span>
+      <span class="nav-title" id="add-title">シフト追加</span>
+      <span class="nav-btn-placeholder"></span>
+    </div>
+    <div class="card-group">
+      <div class="card">
+        <div class="row">
+          <span class="row-label">勤務先</span>
+          <select id="add-workplace" class="row-input"></select>
+        </div>
+        <div class="row">
+          <span class="row-label">勤務日</span>
+          <input type="date" id="add-date" class="row-input">
+        </div>
+        <div class="row">
+          <span class="row-label">出勤</span>
+          <input type="time" id="add-start" class="row-input">
+        </div>
+        <div class="row">
+          <span class="row-label">退勤</span>
+          <input type="time" id="add-end" class="row-input">
+        </div>
+        <div class="row row-last">
+          <span class="row-label">休憩時間(分)</span>
+          <input type="number" id="add-break" class="row-input row-input-narrow" min="0" step="5">
+        </div>
+      </div>
+    </div>
+
+    <div id="add-result" class="result-card"></div>
+
+    <div class="bottom-pad">
+      <button id="add-save" class="btn-primary" disabled>保存する</button>
+    </div>
+  </section>
+
+  <!-- 勤務先一覧 -->
+  <section id="screen-workplaces" class="screen">
+    <div class="header-row">
+      <span class="header-title">勤務先</span>
+      <button id="workplace-add-btn" class="link-btn">＋ 追加</button>
+    </div>
+    <div id="workplace-list" class="list-pad"></div>
+  </section>
+
+  <!-- 時給ルール -->
+  <section id="screen-rates" class="screen">
+    <div class="nav-bar">
+      <span class="nav-btn" id="rates-back">← 戻る</span>
+      <span class="nav-title" id="rates-title">時給ルール</span>
+      <span class="nav-btn-placeholder"></span>
+    </div>
+    <div id="rates-content"></div>
+  </section>
+
+  <!-- 設定 -->
+  <section id="screen-settings" class="screen">
+    <div class="header-title">設定</div>
+
+    <div class="section-label">月収目標</div>
+    <div class="list-pad">
+      <div class="card pad-14">
+        <div class="goal-row">
+          <span>¥</span>
+          <input type="number" id="settings-goal" class="goal-input">
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">祝日設定</div>
+    <div class="list-pad">
+      <div class="card" id="holiday-list"></div>
+      <div class="holiday-add-row">
+        <input type="date" id="holiday-input">
+        <button id="holiday-add-btn" class="btn-small">追加</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ルール編集モーダル -->
+  <div id="rate-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">時給ルール</span>
+        <span id="modal-close" class="modal-close">✕</span>
+      </div>
+      <div class="section-label small">曜日</div>
+      <div class="segment">
+        <button class="segment-btn" id="daytype-weekday" data-value="weekday">月〜土</button>
+        <button class="segment-btn" id="daytype-holiday" data-value="holiday">日曜・祝日</button>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="section-label small">開始</div>
+          <input type="time" id="modal-start" class="modal-input">
+        </div>
+        <div>
+          <div class="section-label small">終了</div>
+          <input type="time" id="modal-end" class="modal-input">
+        </div>
+      </div>
+      <div class="section-label small">時給(円)</div>
+      <input type="number" id="modal-wage" class="modal-input full">
+      <button id="modal-save" class="btn-primary" style="margin-top:16px">保存</button>
+    </div>
+  </div>
+
+  <!-- タブバー -->
+  <nav class="tabbar">
+    <button class="tab-item" data-tab="home">
+      <span class="tab-icon">🏠</span><span class="tab-label">ホーム</span>
+    </button>
+    <button class="tab-item" data-tab="history">
+      <span class="tab-icon">📅</span><span class="tab-label">履歴</span>
+    </button>
+    <button class="tab-item tab-item-center" data-tab="add">
+      <span class="tab-center-circle">＋</span>
+    </button>
+    <button class="tab-item" data-tab="workplaces">
+      <span class="tab-icon">🏢</span><span class="tab-label">勤務先</span>
+    </button>
+    <button class="tab-item" data-tab="settings">
+      <span class="tab-icon">⚙️</span><span class="tab-label">設定</span>
+    </button>
+  </nav>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
