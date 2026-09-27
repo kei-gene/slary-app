@@ -17,8 +17,15 @@
 
   <!-- 履歴 -->
   <section id="screen-history" class="screen">
-    <div class="header-title">勤務履歴</div>
+    <div class="header-row">
+      <span class="header-title">勤務履歴</span>
+      <div class="segment view-segment" id="history-view-segment">
+        <button class="segment-btn active" data-view="list">リスト</button>
+        <button class="segment-btn" data-view="calendar">カレンダー</button>
+      </div>
+    </div>
     <div id="history-list" class="list-pad"></div>
+    <div id="history-calendar" class="list-pad hidden"></div>
   </section>
 
   <!-- シフト追加/編集 -->
@@ -28,13 +35,55 @@
       <span class="nav-title" id="add-title">シフト追加</span>
       <span class="nav-btn-placeholder"></span>
     </div>
-    <div class="card-group">
+
+    <div class="segment mode-segment" id="add-mode-segment">
+      <button class="segment-btn active" id="mode-single" data-mode="single">単発</button>
+      <button class="segment-btn" id="mode-bulk" data-mode="bulk">まとめて追加</button>
+      <button class="segment-btn" id="mode-template" data-mode="template">テンプレ一括</button>
+    </div>
+
+    <div id="template-fields" class="card-group hidden">
       <div class="card">
         <div class="row">
-          <span class="row-label">勤務先</span>
+          <span class="row-label">開始日</span>
+          <input type="date" id="tmpl-start" class="row-input">
+        </div>
+        <div class="row row-last">
+          <span class="row-label">終了日</span>
+          <input type="date" id="tmpl-end" class="row-input">
+        </div>
+      </div>
+      <div class="tmpl-hint">「設定」の曜日ごとの初期設定をもとに、対象期間のシフトをまとめて登録します。</div>
+    </div>
+    <div id="template-preview" class="list-pad hidden"></div>
+
+    <div id="bulk-fields" class="card-group hidden">
+      <div class="card">
+        <div class="row">
+          <span class="row-label">開始日</span>
+          <input type="date" id="bulk-start" class="row-input">
+        </div>
+        <div class="row row-last">
+          <span class="row-label">終了日</span>
+          <input type="date" id="bulk-end" class="row-input">
+        </div>
+      </div>
+      <div class="section-label small">繰り返す曜日</div>
+      <div class="weekday-picker" id="weekday-picker">
+        <button class="weekday-btn" data-dow="0">日</button>
+        <button class="weekday-btn" data-dow="1">月</button>
+        <button class="weekday-btn" data-dow="2">火</button>
+        <button class="weekday-btn" data-dow="3">水</button>
+        <button class="weekday-btn" data-dow="4">木</button>
+        <button class="weekday-btn" data-dow="5">金</button>
+        <button class="weekday-btn" data-dow="6">土</button>
+      </div>
+    </div>
+
+    <div class="card-group" id="shared-fields">
           <select id="add-workplace" class="row-input"></select>
         </div>
-        <div class="row">
+        <div class="row" id="single-date-row">
           <span class="row-label">勤務日</span>
           <input type="date" id="add-date" class="row-input">
         </div>
@@ -54,6 +103,7 @@
     </div>
 
     <div id="add-result" class="result-card"></div>
+    <div id="bulk-preview" class="list-pad hidden"></div>
 
     <div class="bottom-pad">
       <button id="add-save" class="btn-primary" disabled>保存する</button>
@@ -68,6 +118,18 @@
     </div>
     <div id="workplace-list" class="list-pad"></div>
   </section>
+
+  <!-- 日別シフト詳細モーダル -->
+  <div id="day-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="day-modal-title">シフト</span>
+        <span id="day-modal-close" class="modal-close">✕</span>
+      </div>
+      <div id="day-modal-list"></div>
+      <button id="day-modal-add" class="btn-primary" style="margin-top:14px">＋ この日にシフトを追加</button>
+    </div>
+  </div>
 
   <!-- 時給ルール -->
   <section id="screen-rates" class="screen">
@@ -100,6 +162,12 @@
         <input type="date" id="holiday-input">
         <button id="holiday-add-btn" class="btn-small">追加</button>
       </div>
+    </div>
+
+    <div class="section-label">曜日ごとの初期設定</div>
+    <div class="tmpl-hint" style="padding:0 20px 8px">オンにした曜日は、カレンダーで日付をタップした時にこの内容がすぐ使えます。「テンプレ一括」もこの設定をもとに登録します。</div>
+    <div class="list-pad">
+      <div class="card" id="weekly-template-list"></div>
     </div>
   </section>
 
