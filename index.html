@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>時給・給与管理アプリ</title>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -81,6 +81,9 @@
     </div>
 
     <div class="card-group" id="shared-fields">
+      <div class="card">
+        <div class="row">
+          <span class="row-label">勤務先</span>
           <select id="add-workplace" class="row-input"></select>
         </div>
         <div class="row" id="single-date-row">
@@ -225,19 +228,19 @@
   <!-- タブバー -->
   <nav class="tabbar">
     <button class="tab-item" data-tab="home">
-      <span class="tab-icon">🏠</span><span class="tab-label">ホーム</span>
+      <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="tab-label">ホーム</span>
     </button>
     <button class="tab-item" data-tab="history">
-      <span class="tab-icon">📅</span><span class="tab-label">履歴</span>
+      <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span><span class="tab-label">履歴</span>
     </button>
     <button class="tab-item tab-item-center" data-tab="add">
-      <span class="tab-center-circle">＋</span>
+      <span class="tab-center-circle"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="tab-center-label">シフト追加</span></span>
     </button>
     <button class="tab-item" data-tab="workplaces">
-      <span class="tab-icon">🏢</span><span class="tab-label">勤務先</span>
+      <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M10 8h1M13 8h1M10 12h1M13 12h1M10 16h4"/></svg></span><span class="tab-label">勤務先</span>
     </button>
     <button class="tab-item" data-tab="settings">
-      <span class="tab-icon">⚙️</span><span class="tab-label">設定</span>
+      <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span><span class="tab-label">設定</span>
     </button>
   </nav>
 
