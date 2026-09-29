@@ -26,6 +26,7 @@ let state = {
   prefillDate: null, // date to pre-fill when opening the add screen from the calendar
   templates: [], // {id, name, workplaceId, start, end} - managed from Settings, selectable on the add screen
   holidayWeekdays: new Set([0]), // dow numbers treated as the "holiday" rate group (default: Sunday only)
+  autoHolidayYears: [], // years for which Japanese public holidays have already been auto-added to state.holidays
 };
 
 // ---------- initial demo data (used only on first run) ----------
@@ -101,6 +102,101 @@ function holidayGroupDows() { return [0, 1, 2, 3, 4, 5, 6].filter((d) => state.h
 function weekdayGroupLabel() { const l = weekdayGroupDows().map((d) => DOW_LABELS[d]).join("・"); return l || "（設定なし）"; }
 function holidayGroupLabel() { const l = holidayGroupDows().map((d) => DOW_LABELS[d]).join("・"); return (l ? l + "・" : "") + "祝日"; }
 
+// ---------- Japanese public holidays (auto-applied) ----------
+function ymd(year, month, day) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+function nthMonday(year, month, n) {
+  const first = new Date(year, month - 1, 1);
+  const offset = (8 - first.getDay()) % 7; // days until the first Monday
+  return 1 + offset + (n - 1) * 7;
+}
+function springEquinoxDay(year) {
+  return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+}
+function autumnEquinoxDay(year) {
+  return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+}
+
+// returns [{date:"YYYY-MM-DD", name}] for the given year (valid for the current Reiwa-era rule set, ~2020-2099)
+function getJapanHolidays(year) {
+  const list = [
+    { date: ymd(year, 1, 1), name: "元日" },
+    { date: ymd(year, 1, nthMonday(year, 1, 2)), name: "成人の日" },
+    { date: ymd(year, 2, 11), name: "建国記念の日" },
+    { date: ymd(year, 2, 23), name: "天皇誕生日" },
+    { date: ymd(year, 3, springEquinoxDay(year)), name: "春分の日" },
+    { date: ymd(year, 4, 29), name: "昭和の日" },
+    { date: ymd(year, 5, 3), name: "憲法記念日" },
+    { date: ymd(year, 5, 4), name: "みどりの日" },
+    { date: ymd(year, 5, 5), name: "こどもの日" },
+    { date: ymd(year, 7, nthMonday(year, 7, 3)), name: "海の日" },
+    { date: ymd(year, 8, 11), name: "山の日" },
+    { date: ymd(year, 9, nthMonday(year, 9, 3)), name: "敬老の日" },
+    { date: ymd(year, 9, autumnEquinoxDay(year)), name: "秋分の日" },
+    { date: ymd(year, 10, nthMonday(year, 10, 2)), name: "スポーツの日" },
+    { date: ymd(year, 11, 3), name: "文化の日" },
+    { date: ymd(year, 11, 23), name: "勤労感謝の日" },
+  ].sort((a, b) => (a.date < b.date ? -1 : 1));
+
+  const dateSet = new Set(list.map((h) => h.date));
+
+  // 国民の休日: a day with holidays both immediately before and after it, that isn't itself
+  // a holiday or a Sunday, becomes a holiday too (mainly 9/22 between 敬老の日 and 秋分の日).
+  for (let i = 0; i < list.length - 1; i++) {
+    const cur = new Date(list[i].date + "T00:00:00");
+    const next = new Date(list[i + 1].date + "T00:00:00");
+    const gapDays = Math.round((next - cur) / 86400000);
+    if (gapDays === 2) {
+      const between = new Date(cur);
+      between.setDate(between.getDate() + 1);
+      if (between.getDay() !== 0) {
+        const dStr = ymd(between.getFullYear(), between.getMonth() + 1, between.getDate());
+        if (!dateSet.has(dStr)) { list.push({ date: dStr, name: "国民の休日" }); dateSet.add(dStr); }
+      }
+    }
+  }
+
+  // 振替休日: any holiday that falls on a Sunday pushes to the next day that isn't already a holiday.
+  const substitutes = [];
+  list.forEach((h) => {
+    const d = new Date(h.date + "T00:00:00");
+    if (d.getDay() === 0) {
+      const sub = new Date(d);
+      do { sub.setDate(sub.getDate() + 1); } while (dateSet.has(ymd(sub.getFullYear(), sub.getMonth() + 1, sub.getDate())));
+      const subStr = ymd(sub.getFullYear(), sub.getMonth() + 1, sub.getDate());
+      substitutes.push({ date: subStr, name: "振替休日" });
+      dateSet.add(subStr);
+    }
+  });
+
+  return list.concat(substitutes).sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
+// name of the Japanese holiday on this date, if any (for display only; "" if none or a custom entry)
+function japanHolidayName(dateStr) {
+  const year = Number(dateStr.slice(0, 4));
+  const hit = getJapanHolidays(year).find((h) => h.date === dateStr);
+  return hit ? hit.name : "";
+}
+
+// auto-add Japanese public holidays for nearby years, once per year (won't re-add a date the user deleted)
+function ensureJapanHolidays() {
+  const thisYear = new Date().getFullYear();
+  const targetYears = [thisYear - 1, thisYear, thisYear + 1, thisYear + 2];
+  let changed = false;
+  targetYears.forEach((year) => {
+    if (state.autoHolidayYears.includes(year)) return;
+    getJapanHolidays(year).forEach((h) => {
+      if (!state.holidays.includes(h.date)) state.holidays.push(h.date);
+    });
+    state.autoHolidayYears.push(year);
+    changed = true;
+  });
+  if (changed) state.holidays.sort();
+  return changed;
+}
+
 // slice-based pay calculation across a workplace's rate windows
 function computePay(workplace, dateStr, startStr, endStr, breakMin, holidays) {
   if (!workplace || !startStr || !endStr) return null;
@@ -166,6 +262,7 @@ function save() {
     holidays: state.holidays,
     templates: state.templates,
     holidayWeekdays: [...state.holidayWeekdays],
+    autoHolidayYears: state.autoHolidayYears,
   }));
 }
 
@@ -182,12 +279,14 @@ function load() {
       state.holidays = Array.isArray(parsed.holidays) ? parsed.holidays : [];
       if (Array.isArray(parsed.templates)) state.templates = parsed.templates;
       if (Array.isArray(parsed.holidayWeekdays)) state.holidayWeekdays = new Set(parsed.holidayWeekdays);
+      if (Array.isArray(parsed.autoHolidayYears)) state.autoHolidayYears = parsed.autoHolidayYears;
     }
   } catch (e) {
     console.error("読み込みエラー", e);
     state.workplaces = defaultWorkplaces();
     state.shifts = defaultShifts();
   }
+  ensureJapanHolidays();
 }
 
 // ---------- tab navigation ----------
@@ -212,9 +311,12 @@ function renderCurrentScreen() {
 
 // ---------- HOME ----------
 let showBreakdown = false;
+let homeMonthOffset = 0; // 0 = this month, 1 = next month
 
 function renderHome() {
   const now = new Date();
+  now.setDate(1);
+  now.setMonth(now.getMonth() + homeMonthOffset);
   const mKey = monthKey(now);
   const monthShifts = state.shifts.filter((s) => monthKey(new Date(s.date + "T00:00:00")) === mKey);
 
@@ -245,9 +347,15 @@ function renderHome() {
   }
 
   document.getElementById("home-content").innerHTML = `
-    <div class="home-month">${now.getFullYear()}年${now.getMonth() + 1}月</div>
+    <div class="home-month-row">
+      <div class="home-month">${now.getFullYear()}年${now.getMonth() + 1}月</div>
+      <div class="segment month-segment" id="home-month-segment">
+        <button class="segment-btn ${homeMonthOffset === 0 ? "active" : ""}" data-offset="0">今月</button>
+        <button class="segment-btn ${homeMonthOffset === 1 ? "active" : ""}" data-offset="1">来月</button>
+      </div>
+    </div>
     <div class="home-block-first" id="home-amount-block" style="cursor:${byWorkplace.length > 1 ? "pointer" : "default"}">
-      <div class="home-amount-label">今月の予想給与</div>
+      <div class="home-amount-label">${homeMonthOffset === 0 ? "今月" : "来月"}の予想給与</div>
       <div class="home-amount">${yen(totalPay)}</div>
       ${byWorkplace.length > 1 ? `<div class="home-breakdown-toggle">内訳を${showBreakdown ? "閉じる" : "見る"}</div>` : ""}
     </div>
@@ -270,6 +378,9 @@ function renderHome() {
   document.getElementById("home-add-btn").onclick = () => { state.editingShiftId = null; switchTab("add"); };
   const amountBlock = document.getElementById("home-amount-block");
   if (byWorkplace.length > 1) amountBlock.onclick = () => { showBreakdown = !showBreakdown; renderHome(); };
+  document.querySelectorAll("#home-month-segment .segment-btn").forEach((btn) => {
+    btn.onclick = () => { homeMonthOffset = Number(btn.dataset.offset); renderHome(); };
+  });
 }
 
 // ---------- HISTORY ----------
@@ -728,12 +839,16 @@ function renderHolidayList() {
     container.innerHTML = `<div class="rate-empty">祝日が登録されていません</div>`;
     return;
   }
-  container.innerHTML = state.holidays.map((h) => `
-    <div class="holiday-row">
-      <span>${h}</span>
-      <span class="holiday-delete" data-del-holiday="${h}">🗑</span>
-    </div>
-  `).join("");
+  const sorted = [...state.holidays].sort();
+  container.innerHTML = sorted.map((h) => {
+    const name = japanHolidayName(h);
+    return `
+      <div class="holiday-row">
+        <span>${h}${name ? `<span class="holiday-name">${name}</span>` : ""}</span>
+        <span class="holiday-delete" data-del-holiday="${h}">🗑</span>
+      </div>
+    `;
+  }).join("");
   container.querySelectorAll("[data-del-holiday]").forEach((el) => {
     el.onclick = () => {
       state.holidays = state.holidays.filter((h) => h !== el.dataset.delHoliday);

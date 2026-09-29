@@ -78,6 +78,9 @@ body {
 
 /* ---- home ---- */
 .home-month { padding: 18px 20px 4px; font-size: 13px; color: #8E8E93; }
+.home-month-row { display: flex; justify-content: space-between; align-items: center; padding-right: 20px; }
+.home-month-row .home-month { padding-right: 0; }
+.month-segment .segment-btn { height: 28px; font-size: 12px; padding: 0 12px; flex: none; }
 .home-amount-label { font-size: 13px; color: #636366; margin-bottom: 4px; }
 .home-amount { font-size: 42px; font-weight: 700; line-height: 1.1; }
 .home-breakdown-toggle { font-size: 12px; color: #007AFF; margin-top: 4px; cursor: pointer; }
@@ -141,6 +144,7 @@ body {
 .goal-input { flex: 1; border: none; font-size: 18px; font-weight: 700; outline: none; font-family: inherit; background: transparent; }
 .holiday-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 0.5px solid #E5E5EA; font-size: 14px; }
 .holiday-row:last-child { border-bottom: none; }
+.holiday-name { color: #8E8E93; font-size: 12px; margin-left: 8px; }
 .holiday-delete { color: #FF3B30; cursor: pointer; }
 .holiday-add-row { display: flex; gap: 8px; margin-top: 10px; }
 .holiday-add-row input { flex: 1; height: 40px; border-radius: 10px; border: 0.5px solid #D1D1D6; padding: 0 10px; font-size: 14px; font-family: inherit; }
@@ -406,7 +410,8 @@ body { padding-top: env(safe-area-inset-top); }
     column-gap: 20px; align-items: start; padding: 0 20px;
   }
   #home-content > * { padding-left: 0; padding-right: 0; margin-left: 0; margin-right: 0; }
-  #home-content > .home-month { grid-column: 1 / -1; font-size: 15px; padding-top: 24px; }
+  #home-content > .home-month-row { grid-column: 1 / -1; padding-top: 24px; padding-right: 0; }
+  #home-content > .home-month-row .home-month { font-size: 15px; }
   #home-content > .home-block-first {
     background: #fff; border-radius: 16px; padding: 24px 28px; margin-bottom: 16px;
   }
