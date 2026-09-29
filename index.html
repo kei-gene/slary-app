@@ -36,52 +36,12 @@
       <span class="nav-btn-placeholder"></span>
     </div>
 
-    <div class="segment mode-segment" id="add-mode-segment">
-      <button class="segment-btn active" id="mode-single" data-mode="single">単発</button>
-      <button class="segment-btn" id="mode-bulk" data-mode="bulk">まとめて追加</button>
-      <button class="segment-btn" id="mode-template" data-mode="template">テンプレ一括</button>
-    </div>
-
-    <div id="template-fields" class="card-group hidden">
-      <div class="card">
-        <div class="row">
-          <span class="row-label">開始日</span>
-          <input type="date" id="tmpl-start" class="row-input">
-        </div>
-        <div class="row row-last">
-          <span class="row-label">終了日</span>
-          <input type="date" id="tmpl-end" class="row-input">
-        </div>
-      </div>
-      <div class="tmpl-hint">「設定」の曜日ごとの初期設定をもとに、対象期間のシフトをまとめて登録します。</div>
-    </div>
-    <div id="template-preview" class="list-pad hidden"></div>
-
-    <div id="bulk-fields" class="card-group hidden">
-      <div class="card">
-        <div class="row">
-          <span class="row-label">開始日</span>
-          <input type="date" id="bulk-start" class="row-input">
-        </div>
-        <div class="row row-last">
-          <span class="row-label">終了日</span>
-          <input type="date" id="bulk-end" class="row-input">
-        </div>
-      </div>
-      <div class="section-label small">繰り返す曜日</div>
-      <div class="weekday-picker" id="weekday-picker">
-        <button class="weekday-btn" data-dow="0">日</button>
-        <button class="weekday-btn" data-dow="1">月</button>
-        <button class="weekday-btn" data-dow="2">火</button>
-        <button class="weekday-btn" data-dow="3">水</button>
-        <button class="weekday-btn" data-dow="4">木</button>
-        <button class="weekday-btn" data-dow="5">金</button>
-        <button class="weekday-btn" data-dow="6">土</button>
-      </div>
-    </div>
-
     <div class="card-group" id="shared-fields">
       <div class="card">
+        <div class="row" id="template-row-label">
+          <span class="row-label">テンプレート</span>
+          <select id="add-template" class="row-input"></select>
+        </div>
         <div class="row">
           <span class="row-label">勤務先</span>
           <select id="add-workplace" class="row-input"></select>
@@ -100,13 +60,16 @@
         </div>
         <div class="row row-last">
           <span class="row-label">休憩時間(分)</span>
-          <input type="number" id="add-break" class="row-input row-input-narrow" min="0" step="5">
+          <div class="stepper">
+            <button type="button" data-step="-5" aria-label="5分減らす">−</button>
+            <input type="number" id="add-break" class="row-input row-input-narrow" min="0" step="5" placeholder="0" inputmode="numeric">
+            <button type="button" data-step="5" aria-label="5分増やす">＋</button>
+          </div>
         </div>
       </div>
     </div>
 
     <div id="add-result" class="result-card"></div>
-    <div id="bulk-preview" class="list-pad hidden"></div>
 
     <div class="bottom-pad">
       <button id="add-save" class="btn-primary" disabled>保存する</button>
@@ -167,12 +130,43 @@
       </div>
     </div>
 
-    <div class="section-label">曜日ごとの初期設定</div>
-    <div class="tmpl-hint" style="padding:0 20px 8px">オンにした曜日は、カレンダーで日付をタップした時にこの内容がすぐ使えます。「テンプレ一括」もこの設定をもとに登録します。</div>
+    <div class="section-label">曜日の区分</div>
+    <div class="tmpl-hint" style="padding:0 20px 8px">時給ルールの「月〜土」「日曜・祝日」をこの区分に合わせて変えられます。オンにした曜日が休日側の時給になります。</div>
+    <div class="weekday-picker" id="dow-group-picker" style="padding:0 20px 4px"></div>
+    <div class="tmpl-hint" id="dow-group-summary" style="padding:4px 20px 8px"></div>
+
+    <div class="section-label">テンプレート</div>
+    <div class="tmpl-hint" style="padding:0 20px 8px">シフト追加画面でテンプレートを選ぶと、勤務先・出勤・退勤が自動で入力されます。</div>
     <div class="list-pad">
-      <div class="card" id="weekly-template-list"></div>
+      <div class="card" id="template-list"></div>
+      <button class="rate-add-btn" id="template-add-btn">＋ テンプレートを追加</button>
     </div>
   </section>
+
+  <!-- テンプレート編集モーダル -->
+  <div id="template-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="template-modal-title">テンプレート</span>
+        <span id="tmpl-modal-close" class="modal-close">✕</span>
+      </div>
+      <div class="section-label small">テンプレート名</div>
+      <input type="text" id="tmpl-modal-name" class="modal-input full" placeholder="例: 平日夜シフト">
+      <div class="section-label small">勤務先</div>
+      <select id="tmpl-modal-workplace" class="modal-input full"></select>
+      <div class="two-col" style="margin-top:12px">
+        <div>
+          <div class="section-label small">出勤</div>
+          <input type="time" id="tmpl-modal-start" class="modal-input">
+        </div>
+        <div>
+          <div class="section-label small">退勤</div>
+          <input type="time" id="tmpl-modal-end" class="modal-input">
+        </div>
+      </div>
+      <button id="tmpl-modal-save" class="btn-primary" style="margin-top:16px">保存</button>
+    </div>
+  </div>
 
   <!-- ルール編集モーダル -->
   <div id="rate-modal" class="modal-overlay hidden">
@@ -222,6 +216,7 @@
         </div>
       </div>
       <button id="wp-modal-save" class="btn-primary" style="margin-top:16px">保存</button>
+      <button id="wp-modal-delete" class="btn-delete-wide">この勤務先を削除</button>
     </div>
   </div>
 

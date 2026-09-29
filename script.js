@@ -18,15 +18,14 @@ let state = {
   activeWorkplaceId: null,
   editingRate: null, // null | "new" | rate object (working copy)
   editingWorkplaceId: null,
-  addMode: "single", // "single" | "bulk"
-  bulkWeekdays: new Set(),
-  bulkExcluded: new Set(), // dates excluded from the current manual bulk preview
-  templateExcluded: new Set(), // dates excluded from the current template bulk preview
+  editingTemplateId: null,
   historyView: "list", // "list" | "calendar"
   calendarMonthOffset: 0, // months from the current month, shown in the calendar view
   selectedDayDate: null, // date shown in the day-detail modal
+  addFresh: false, // true when the add screen was just opened (fields start blank)
   prefillDate: null, // date to pre-fill when opening the add screen from the calendar
-  weeklyTemplates: { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null }, // dow -> {workplaceId,start,end,breakMin} | null
+  templates: [], // {id, name, workplaceId, start, end} - managed from Settings, selectable on the add screen
+  holidayWeekdays: new Set([0]), // dow numbers treated as the "holiday" rate group (default: Sunday only)
 };
 
 // ---------- initial demo data (used only on first run) ----------
@@ -92,9 +91,15 @@ function fmtDate(dateStr) {
 }
 function getDayType(dateStr, holidays) {
   const d = new Date(dateStr + "T00:00:00");
-  if (d.getDay() === 0 || holidays.includes(dateStr)) return "holiday";
+  if (state.holidayWeekdays.has(d.getDay()) || holidays.includes(dateStr)) return "holiday";
   return "weekday";
 }
+
+// dow numbers (0-6) currently in each rate group, and a display label for each
+function weekdayGroupDows() { return [0, 1, 2, 3, 4, 5, 6].filter((d) => !state.holidayWeekdays.has(d)); }
+function holidayGroupDows() { return [0, 1, 2, 3, 4, 5, 6].filter((d) => state.holidayWeekdays.has(d)); }
+function weekdayGroupLabel() { const l = weekdayGroupDows().map((d) => DOW_LABELS[d]).join("・"); return l || "（設定なし）"; }
+function holidayGroupLabel() { const l = holidayGroupDows().map((d) => DOW_LABELS[d]).join("・"); return (l ? l + "・" : "") + "祝日"; }
 
 // slice-based pay calculation across a workplace's rate windows
 function computePay(workplace, dateStr, startStr, endStr, breakMin, holidays) {
@@ -159,7 +164,8 @@ function save() {
   localStorage.setItem(LS_SETTINGS, JSON.stringify({
     monthlyGoal: state.monthlyGoal,
     holidays: state.holidays,
-    weeklyTemplates: state.weeklyTemplates,
+    templates: state.templates,
+    holidayWeekdays: [...state.holidayWeekdays],
   }));
 }
 
@@ -174,7 +180,8 @@ function load() {
       const parsed = JSON.parse(st);
       state.monthlyGoal = typeof parsed.monthlyGoal === "number" ? parsed.monthlyGoal : 80000;
       state.holidays = Array.isArray(parsed.holidays) ? parsed.holidays : [];
-      if (parsed.weeklyTemplates) state.weeklyTemplates = { ...state.weeklyTemplates, ...parsed.weeklyTemplates };
+      if (Array.isArray(parsed.templates)) state.templates = parsed.templates;
+      if (Array.isArray(parsed.holidayWeekdays)) state.holidayWeekdays = new Set(parsed.holidayWeekdays);
     }
   } catch (e) {
     console.error("読み込みエラー", e);
@@ -184,9 +191,10 @@ function load() {
 }
 
 // ---------- tab navigation ----------
-function switchTab(tab) {
+function switchTab(tab, keepEditing) {
   state.tab = tab;
-  state.editingShiftId = null;
+  if (!keepEditing) state.editingShiftId = null;
+  if (tab === "add") state.addFresh = !keepEditing;
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   document.getElementById(`screen-${tab}`).classList.add("active");
   document.querySelectorAll(".tab-item").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
@@ -303,7 +311,7 @@ function renderHistoryList() {
   }).join("");
 
   container.querySelectorAll("[data-edit]").forEach((btn) => {
-    btn.onclick = () => { state.editingShiftId = btn.dataset.edit; switchTab("add"); };
+    btn.onclick = () => { state.editingShiftId = btn.dataset.edit; switchTab("add", true); };
   });
   container.querySelectorAll("[data-delete]").forEach((btn) => {
     btn.onclick = () => {
@@ -397,37 +405,7 @@ function renderDayModalList() {
   const container = document.getElementById("day-modal-list");
 
   if (dayShifts.length === 0) {
-    const dow = new Date(dateStr + "T00:00:00").getDay();
-    const tmpl = state.weeklyTemplates[dow];
-    const wp = tmpl ? state.workplaces.find((w) => w.id === tmpl.workplaceId) : null;
-    const r = tmpl && wp ? computePay(wp, dateStr, tmpl.start, tmpl.end, tmpl.breakMin, state.holidays) : null;
-
-    container.innerHTML = `
-      <div class="day-empty-note">この日のシフトはまだありません</div>
-      ${tmpl && wp ? `
-        <div class="tmpl-quick-card">
-          <div class="tmpl-quick-label">${DOW_LABELS[dow]}曜日の初期設定</div>
-          <div class="tmpl-quick-detail">${escapeHtml(wp.name)} ・ ${tmpl.start}〜${tmpl.end}${r ? ` ・ ${yen(r.pay)}` : ""}</div>
-          <button class="btn-primary" id="tmpl-quick-save" style="margin-top:10px">この内容で登録</button>
-        </div>
-      ` : ""}
-    `;
-
-    if (tmpl && wp) {
-      document.getElementById("tmpl-quick-save").onclick = () => {
-        state.shifts.push({
-          id: `s${Date.now()}`,
-          workplaceId: tmpl.workplaceId,
-          date: dateStr,
-          start: tmpl.start,
-          end: tmpl.end,
-          breakMin: tmpl.breakMin,
-        });
-        save();
-        renderDayModalList();
-        renderHistoryCalendar();
-      };
-    }
+    container.innerHTML = `<div class="day-empty-note">この日のシフトはまだありません</div>`;
     return;
   }
 
@@ -452,7 +430,7 @@ function renderDayModalList() {
     el.onclick = () => {
       closeDayModal();
       state.editingShiftId = el.dataset.dayEdit;
-      switchTab("add");
+      switchTab("add", true);
     };
   });
   container.querySelectorAll("[data-day-delete]").forEach((el) => {
@@ -478,80 +456,57 @@ function renderAddScreen() {
   document.getElementById("add-title").textContent = editing ? "シフトを編集" : "シフト追加";
 
   // editing an existing shift is always single-mode; bulk only applies to brand-new shifts
-  if (editing) state.addMode = "single";
-  document.getElementById("add-mode-segment").classList.toggle("hidden", !!editing);
-  document.querySelectorAll("#add-mode-segment .segment-btn").forEach((b) => {
-    b.classList.toggle("active", b.dataset.mode === state.addMode);
-  });
-  document.getElementById("mode-single").onclick = () => { state.addMode = "single"; renderAddScreen(); };
-  document.getElementById("mode-bulk").onclick = () => { state.addMode = "bulk"; renderAddScreen(); };
-  document.getElementById("mode-template").onclick = () => { state.addMode = "template"; renderAddScreen(); };
-
-  const isBulk = state.addMode === "bulk" && !editing;
-  const isTemplate = state.addMode === "template" && !editing;
-  document.getElementById("bulk-fields").classList.toggle("hidden", !isBulk);
-  document.getElementById("single-date-row").classList.toggle("hidden", isBulk);
-  document.getElementById("add-result").classList.toggle("hidden", isBulk || isTemplate);
-  document.getElementById("bulk-preview").classList.toggle("hidden", !isBulk);
-  document.getElementById("template-fields").classList.toggle("hidden", !isTemplate);
-  document.getElementById("template-preview").classList.toggle("hidden", !isTemplate);
-  document.getElementById("shared-fields").classList.toggle("hidden", isTemplate);
+  const fresh = state.addFresh && !editing;
+  const startEl = document.getElementById("add-start");
+  const endEl = document.getElementById("add-end");
+  const breakEl = document.getElementById("add-break");
+  const templateSelect = document.getElementById("add-template");
 
   const wpSelect = document.getElementById("add-workplace");
-  wpSelect.innerHTML = state.workplaces.map((w) => `<option value="${w.id}">${escapeHtml(w.name)}</option>`).join("");
-  wpSelect.value = editing ? editing.workplaceId : (state.workplaces[0] ? state.workplaces[0].id : "");
+  const prevWp = fresh ? "" : wpSelect.value;
+  wpSelect.innerHTML = `<option value="">選択してください</option>` +
+    state.workplaces.map((w) => `<option value="${w.id}">${escapeHtml(w.name)}</option>`).join("");
+  wpSelect.value = editing ? editing.workplaceId : (state.workplaces.some((w) => w.id === prevWp) ? prevWp : "");
+
+  templateSelect.innerHTML = `<option value="">テンプレートを選択</option>` +
+    state.templates.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join("");
+  templateSelect.classList.toggle("hidden", editing ? true : state.templates.length === 0);
+  document.getElementById("template-row-label").classList.toggle("hidden", editing ? true : state.templates.length === 0);
 
   const dateField = document.getElementById("add-date");
   if (editing) dateField.value = editing.date;
   else if (state.prefillDate) { dateField.value = state.prefillDate; state.prefillDate = null; }
-  else if (!dateField.value) dateField.value = todayStr();
+  else if (fresh || !dateField.value) dateField.value = todayStr();
 
-  document.getElementById("add-start").value = editing ? editing.start : (document.getElementById("add-start").value || "09:00");
-  document.getElementById("add-end").value = editing ? editing.end : (document.getElementById("add-end").value || "17:00");
-  document.getElementById("add-break").value = editing ? editing.breakMin : (document.getElementById("add-break").value || 45);
-
-  // bulk period defaults: today through the end of the current month
-  const bulkStartEl = document.getElementById("bulk-start");
-  const bulkEndEl = document.getElementById("bulk-end");
-  if (!bulkStartEl.value) bulkStartEl.value = todayStr();
-  if (!bulkEndEl.value) {
-    const d = new Date();
-    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    bulkEndEl.value = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
+  if (editing) {
+    startEl.value = editing.start;
+    endEl.value = editing.end;
+    breakEl.value = editing.breakMin;
+  } else if (fresh) {
+    startEl.value = "";
+    endEl.value = "";
+    breakEl.value = "";
+    templateSelect.value = "";
   }
+  state.addFresh = false;
 
-  // template period defaults: same as bulk (today through end of month)
-  const tmplStartEl = document.getElementById("tmpl-start");
-  const tmplEndEl = document.getElementById("tmpl-end");
-  if (!tmplStartEl.value) tmplStartEl.value = bulkStartEl.value;
-  if (!tmplEndEl.value) tmplEndEl.value = bulkEndEl.value;
-
-  document.querySelectorAll(".weekday-btn").forEach((btn) => {
-    btn.classList.toggle("active", state.bulkWeekdays.has(Number(btn.dataset.dow)));
-    btn.onclick = () => {
-      const dow = Number(btn.dataset.dow);
-      if (state.bulkWeekdays.has(dow)) state.bulkWeekdays.delete(dow);
-      else state.bulkWeekdays.add(dow);
-      btn.classList.toggle("active");
-      renderBulkPreview();
-    };
-  });
-
-  const recompute = () => {
-    if (isBulk) renderBulkPreview();
-    else if (isTemplate) renderTemplatePreview();
-    else updateAddResult();
+  templateSelect.onchange = () => {
+    const t = state.templates.find((x) => x.id === templateSelect.value);
+    if (!t) return;
+    if (state.workplaces.some((w) => w.id === t.workplaceId)) wpSelect.value = t.workplaceId;
+    startEl.value = t.start;
+    endEl.value = t.end;
+    updateAddResult();
   };
-  [wpSelect, dateField, document.getElementById("add-start"), document.getElementById("add-end"),
-   document.getElementById("add-break"), bulkStartEl, bulkEndEl, tmplStartEl, tmplEndEl].forEach((el) => { el.oninput = recompute; });
 
-  recompute();
+  [wpSelect, startEl, endEl, breakEl].forEach((el) => { el.oninput = updateAddResult; });
+  dateField.oninput = updateAddResult;
+
+  updateAddResult();
 
   document.getElementById("add-cancel").onclick = () => { state.editingShiftId = null; switchTab("home"); };
 
   document.getElementById("add-save").onclick = () => {
-    if (isBulk) { saveBulkShifts(); return; }
-    if (isTemplate) { saveTemplateShifts(); return; }
     const shift = {
       id: editing ? editing.id : `s${Date.now()}`,
       workplaceId: wpSelect.value,
@@ -592,221 +547,9 @@ function updateAddResult() {
     saveBtn.disabled = false;
   } else {
     box.className = "result-card";
-    box.innerHTML = `出勤・退勤時間を入力してください`;
+    box.innerHTML = `勤務先と出勤・退勤時間を入力してください`;
     saveBtn.disabled = true;
   }
-}
-
-// ---------- BULK ADD ----------
-function computeBulkDates(startStr, endStr, weekdaySet) {
-  const dates = [];
-  if (!startStr || !endStr || weekdaySet.size === 0) return dates;
-  let cur = new Date(startStr + "T00:00:00");
-  const end = new Date(endStr + "T00:00:00");
-  let guard = 0;
-  while (cur <= end && guard < 366) {
-    if (weekdaySet.has(cur.getDay())) {
-      dates.push(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`);
-    }
-    cur.setDate(cur.getDate() + 1);
-    guard++;
-  }
-  return dates;
-}
-
-function renderBulkPreview() {
-  const wp = state.workplaces.find((w) => w.id === document.getElementById("add-workplace").value);
-  const startStr = document.getElementById("bulk-start").value;
-  const endStr = document.getElementById("bulk-end").value;
-  const startTime = document.getElementById("add-start").value;
-  const endTime = document.getElementById("add-end").value;
-  const breakMin = Number(document.getElementById("add-break").value) || 0;
-  const container = document.getElementById("bulk-preview");
-  const saveBtn = document.getElementById("add-save");
-
-  const dates = computeBulkDates(startStr, endStr, state.bulkWeekdays);
-  // drop exclusions for dates no longer in range
-  state.bulkExcluded = new Set([...state.bulkExcluded].filter((d) => dates.includes(d)));
-
-  if (dates.length === 0) {
-    container.innerHTML = `<div class="bulk-preview-summary">期間と曜日を選択してください</div>`;
-    saveBtn.disabled = true;
-    return;
-  }
-
-  const existingSet = new Set(state.shifts.filter((s) => s.workplaceId === wp?.id).map((s) => s.date));
-  let willAddCount = 0;
-
-  const rowsHtml = dates.map((d) => {
-    const conflict = existingSet.has(d);
-    const excluded = state.bulkExcluded.has(d);
-    const skip = conflict || excluded;
-    if (!skip) willAddCount++;
-    const r = !skip ? computePay(wp, d, startTime, endTime, breakMin, state.holidays) : null;
-    return `
-      <div class="bulk-preview-row ${skip ? "skip" : ""}" data-toggle-date="${d}">
-        <span>${fmtDate(d)}${conflict ? "（既に登録あり）" : ""}</span>
-        <span class="bulk-preview-toggle">${r ? yen(r.pay) : ""} ${conflict ? "" : (excluded ? "追加しない" : "追加する")}</span>
-      </div>
-    `;
-  }).join("");
-
-  container.innerHTML = `
-    <div class="bulk-preview-summary">${willAddCount}件のシフトを追加します（タップで個別に外せます）</div>
-    <div class="card">${rowsHtml}</div>
-  `;
-
-  container.querySelectorAll("[data-toggle-date]").forEach((row) => {
-    const d = row.dataset.toggleDate;
-    if (existingSet.has(d)) return; // conflicts can't be toggled back on
-    row.onclick = () => {
-      if (state.bulkExcluded.has(d)) state.bulkExcluded.delete(d);
-      else state.bulkExcluded.add(d);
-      renderBulkPreview();
-    };
-  });
-
-  saveBtn.disabled = willAddCount === 0;
-}
-
-function saveBulkShifts() {
-  const workplaceId = document.getElementById("add-workplace").value;
-  const wp = state.workplaces.find((w) => w.id === workplaceId);
-  const startStr = document.getElementById("bulk-start").value;
-  const endStr = document.getElementById("bulk-end").value;
-  const startTime = document.getElementById("add-start").value;
-  const endTime = document.getElementById("add-end").value;
-  const breakMin = Number(document.getElementById("add-break").value) || 0;
-
-  const dates = computeBulkDates(startStr, endStr, state.bulkWeekdays);
-  const existingSet = new Set(state.shifts.filter((s) => s.workplaceId === wp?.id).map((s) => s.date));
-  const toAdd = dates.filter((d) => !existingSet.has(d) && !state.bulkExcluded.has(d));
-
-  if (toAdd.length === 0) return;
-
-  toAdd.forEach((d, i) => {
-    state.shifts.push({
-      id: `s${Date.now()}_${i}`,
-      workplaceId,
-      date: d,
-      start: startTime,
-      end: endTime,
-      breakMin,
-    });
-  });
-  save();
-
-  state.bulkExcluded = new Set();
-  state.bulkWeekdays = new Set();
-  alert(`${toAdd.length}件のシフトを追加しました`);
-  switchTab("home");
-}
-
-// ---------- TEMPLATE-BASED BULK REGISTRATION ----------
-function computeTemplateEntries(startStr, endStr) {
-  const entries = [];
-  if (!startStr || !endStr) return entries;
-  let cur = new Date(startStr + "T00:00:00");
-  const end = new Date(endStr + "T00:00:00");
-  let guard = 0;
-  while (cur <= end && guard < 366) {
-    const dow = cur.getDay();
-    const tmpl = state.weeklyTemplates[dow];
-    if (tmpl) {
-      const dateStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
-      entries.push({ date: dateStr, ...tmpl });
-    }
-    cur.setDate(cur.getDate() + 1);
-    guard++;
-  }
-  return entries;
-}
-
-function renderTemplatePreview() {
-  const startStr = document.getElementById("tmpl-start").value;
-  const endStr = document.getElementById("tmpl-end").value;
-  const container = document.getElementById("template-preview");
-  const saveBtn = document.getElementById("add-save");
-
-  const hasAnyTemplate = Object.values(state.weeklyTemplates).some((t) => !!t);
-  if (!hasAnyTemplate) {
-    container.innerHTML = `<div class="bulk-preview-summary">「設定」で曜日ごとの初期設定を先に登録してください</div>`;
-    saveBtn.disabled = true;
-    return;
-  }
-
-  const entries = computeTemplateEntries(startStr, endStr);
-  state.templateExcluded = new Set([...state.templateExcluded].filter((d) => entries.some((e) => e.date === d)));
-
-  if (entries.length === 0) {
-    container.innerHTML = `<div class="bulk-preview-summary">期間内に初期設定のある曜日がありません</div>`;
-    saveBtn.disabled = true;
-    return;
-  }
-
-  let willAddCount = 0;
-  const rowsHtml = entries.map((e) => {
-    const wp = state.workplaces.find((w) => w.id === e.workplaceId);
-    const conflict = state.shifts.some((s) => s.workplaceId === e.workplaceId && s.date === e.date);
-    const excluded = state.templateExcluded.has(e.date);
-    const skip = conflict || excluded;
-    if (!skip) willAddCount++;
-    const r = !skip && wp ? computePay(wp, e.date, e.start, e.end, e.breakMin, state.holidays) : null;
-    return `
-      <div class="bulk-preview-row ${skip ? "skip" : ""}" data-tmpl-toggle="${e.date}">
-        <span>${fmtDate(e.date)} ${wp ? escapeHtml(wp.name) : ""}${conflict ? "（既に登録あり）" : ""}</span>
-        <span class="bulk-preview-toggle">${r ? yen(r.pay) : ""} ${conflict ? "" : (excluded ? "追加しない" : "追加する")}</span>
-      </div>
-    `;
-  }).join("");
-
-  container.innerHTML = `
-    <div class="bulk-preview-summary">${willAddCount}件のシフトを追加します（タップで個別に外せます）</div>
-    <div class="card">${rowsHtml}</div>
-  `;
-
-  container.querySelectorAll("[data-tmpl-toggle]").forEach((row) => {
-    const d = row.dataset.tmplToggle;
-    const entry = entries.find((e) => e.date === d);
-    const conflict = state.shifts.some((s) => s.workplaceId === entry.workplaceId && s.date === d);
-    if (conflict) return;
-    row.onclick = () => {
-      if (state.templateExcluded.has(d)) state.templateExcluded.delete(d);
-      else state.templateExcluded.add(d);
-      renderTemplatePreview();
-    };
-  });
-
-  saveBtn.disabled = willAddCount === 0;
-}
-
-function saveTemplateShifts() {
-  const startStr = document.getElementById("tmpl-start").value;
-  const endStr = document.getElementById("tmpl-end").value;
-  const entries = computeTemplateEntries(startStr, endStr);
-
-  const toAdd = entries.filter((e) => {
-    const conflict = state.shifts.some((s) => s.workplaceId === e.workplaceId && s.date === e.date);
-    return !conflict && !state.templateExcluded.has(e.date);
-  });
-
-  if (toAdd.length === 0) return;
-
-  toAdd.forEach((e, i) => {
-    state.shifts.push({
-      id: `s${Date.now()}_${i}`,
-      workplaceId: e.workplaceId,
-      date: e.date,
-      start: e.start,
-      end: e.end,
-      breakMin: e.breakMin,
-    });
-  });
-  save();
-
-  state.templateExcluded = new Set();
-  alert(`${toAdd.length}件のシフトを追加しました`);
-  switchTab("home");
 }
 
 // ---------- WORKPLACES ----------
@@ -858,7 +601,7 @@ function renderRates() {
   document.getElementById("rates-edit-workplace").onclick = () => openWorkplaceModal(wp);
 
   const overlapping = findOverlaps(wp.rates);
-  const groups = [{ key: "weekday", label: "月〜土" }, { key: "holiday", label: "日曜・祝日" }];
+  const groups = [{ key: "weekday", label: weekdayGroupLabel() }, { key: "holiday", label: holidayGroupLabel() }];
 
   const groupsHtml = groups.map((g) => {
     const rows = wp.rates.filter((r) => r.dayType === g.key);
@@ -913,6 +656,8 @@ function openRateModal(rate) {
 
 function setDayTypeButton(dayType) {
   state.editingRate.dayType = dayType;
+  document.getElementById("daytype-weekday").textContent = weekdayGroupLabel();
+  document.getElementById("daytype-holiday").textContent = holidayGroupLabel();
   document.getElementById("daytype-weekday").classList.toggle("active", dayType === "weekday");
   document.getElementById("daytype-holiday").classList.toggle("active", dayType === "holiday");
 }
@@ -954,7 +699,27 @@ function renderSettings() {
       renderHolidayList();
     }
   };
-  renderWeeklyTemplates();
+  renderDowGroupPicker();
+  renderTemplateList();
+}
+
+function renderDowGroupPicker() {
+  const picker = document.getElementById("dow-group-picker");
+  picker.innerHTML = [0, 1, 2, 3, 4, 5, 6].map((dow) => `
+    <button class="weekday-btn ${state.holidayWeekdays.has(dow) ? "active" : ""}" data-dow-group="${dow}">${DOW_LABELS[dow]}</button>
+  `).join("");
+  picker.querySelectorAll("[data-dow-group]").forEach((btn) => {
+    btn.onclick = () => {
+      const dow = Number(btn.dataset.dowGroup);
+      if (state.holidayWeekdays.has(dow)) state.holidayWeekdays.delete(dow);
+      else state.holidayWeekdays.add(dow);
+      save();
+      renderDowGroupPicker();
+      renderTemplateList(); // summaries reference the group, so refresh alongside it
+    };
+  });
+  document.getElementById("dow-group-summary").textContent =
+    `平日: ${weekdayGroupLabel()} ／ 休日: ${holidayGroupLabel()}`;
 }
 
 function renderHolidayList() {
@@ -978,76 +743,60 @@ function renderHolidayList() {
   });
 }
 
-// ---------- WEEKLY DEFAULT TEMPLATES ----------
+// ---------- TEMPLATES (勤務先 + 開始/終了 time, managed from Settings) ----------
 const DOW_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
-function renderWeeklyTemplates() {
-  const container = document.getElementById("weekly-template-list");
-  container.innerHTML = [0, 1, 2, 3, 4, 5, 6].map((dow) => {
-    const t = state.weeklyTemplates[dow];
-    const on = !!t;
-    const wp = on ? state.workplaces.find((w) => w.id === t.workplaceId) : null;
-    return `
-      <div class="wt-row" data-dow="${dow}">
-        <div class="wt-head">
-          <div>
-            <div class="wt-day-label">${DOW_LABELS[dow]}曜日</div>
-            <div class="wt-summary">${on ? `${wp ? escapeHtml(wp.name) : "―"} ・ ${t.start}〜${t.end}` : "設定なし"}</div>
+function renderTemplateList() {
+  const container = document.getElementById("template-list");
+  if (state.templates.length === 0) {
+    container.innerHTML = `<div class="rate-empty">テンプレートが登録されていません</div>`;
+  } else {
+    container.innerHTML = state.templates.map((t) => {
+      const wp = state.workplaces.find((w) => w.id === t.workplaceId);
+      return `
+        <div class="day-shift-item">
+          <div class="day-shift-info">
+            <div style="font-weight:600">${escapeHtml(t.name)}</div>
+            <div style="color:#8E8E93">${wp ? escapeHtml(wp.name) : "―"} ・ ${t.start}〜${t.end}</div>
           </div>
-          <button class="wt-toggle ${on ? "on" : ""}" data-wt-toggle="${dow}"></button>
-        </div>
-        <div class="wt-detail ${on ? "" : "hidden"}" data-wt-detail="${dow}">
-          <div class="wt-detail-row">
-            <label>勤務先</label>
-            <select data-wt-field="workplaceId" data-dow="${dow}">
-              ${state.workplaces.map((w) => `<option value="${w.id}" ${on && t.workplaceId === w.id ? "selected" : ""}>${escapeHtml(w.name)}</option>`).join("")}
-            </select>
-          </div>
-          <div class="wt-detail-row">
-            <label>出勤</label>
-            <input type="time" data-wt-field="start" data-dow="${dow}" value="${on ? t.start : "09:00"}">
-          </div>
-          <div class="wt-detail-row">
-            <label>退勤</label>
-            <input type="time" data-wt-field="end" data-dow="${dow}" value="${on ? t.end : "17:00"}">
-          </div>
-          <div class="wt-detail-row">
-            <label>休憩(分)</label>
-            <input type="number" min="0" step="5" data-wt-field="breakMin" data-dow="${dow}" value="${on ? t.breakMin : 45}">
+          <div class="day-shift-actions">
+            <span data-tmpl-edit="${t.id}">✎</span>
+            <span data-tmpl-delete="${t.id}" style="color:#FF3B30">🗑</span>
           </div>
         </div>
-      </div>
-    `;
-  }).join("");
+      `;
+    }).join("");
+  }
 
-  container.querySelectorAll("[data-wt-toggle]").forEach((btn) => {
-    btn.onclick = () => {
-      const dow = Number(btn.dataset.wtToggle);
-      if (state.weeklyTemplates[dow]) {
-        state.weeklyTemplates[dow] = null;
-      } else {
-        state.weeklyTemplates[dow] = {
-          workplaceId: state.workplaces[0] ? state.workplaces[0].id : "",
-          start: "09:00",
-          end: "17:00",
-          breakMin: 45,
-        };
+  container.querySelectorAll("[data-tmpl-edit]").forEach((el) => {
+    el.onclick = () => openTemplateModal(state.templates.find((t) => t.id === el.dataset.tmplEdit));
+  });
+  container.querySelectorAll("[data-tmpl-delete]").forEach((el) => {
+    el.onclick = () => {
+      if (confirm("このテンプレートを削除しますか？")) {
+        state.templates = state.templates.filter((t) => t.id !== el.dataset.tmplDelete);
+        save();
+        renderTemplateList();
       }
-      save();
-      renderWeeklyTemplates();
     };
   });
+}
 
-  container.querySelectorAll("[data-wt-field]").forEach((el) => {
-    el.onchange = () => {
-      const dow = Number(el.dataset.dow);
-      const field = el.dataset.wtField;
-      if (!state.weeklyTemplates[dow]) return;
-      state.weeklyTemplates[dow][field] = field === "breakMin" ? (Number(el.value) || 0) : el.value;
-      save();
-      renderWeeklyTemplates();
-    };
-  });
+function openTemplateModal(template) {
+  state.editingTemplateId = template ? template.id : null;
+  document.getElementById("template-modal-title").textContent = template ? "テンプレートを編集" : "テンプレートを追加";
+  document.getElementById("tmpl-modal-name").value = template ? template.name : "";
+  const wpSelect = document.getElementById("tmpl-modal-workplace");
+  wpSelect.innerHTML = state.workplaces.map((w) => `<option value="${w.id}">${escapeHtml(w.name)}</option>`).join("");
+  wpSelect.value = template ? template.workplaceId : (state.workplaces[0] ? state.workplaces[0].id : "");
+  document.getElementById("tmpl-modal-start").value = template ? template.start : "09:00";
+  document.getElementById("tmpl-modal-end").value = template ? template.end : "17:00";
+  document.getElementById("template-modal").classList.remove("hidden");
+}
+
+function closeTemplateModal() {
+  state.editingTemplateId = null;
+  document.getElementById("template-modal").classList.add("hidden");
 }
 
 // ---------- utils ----------
@@ -1084,6 +833,23 @@ function init() {
     renderRates();
   };
 
+  document.getElementById("wp-modal-delete").onclick = () => {
+    const id = state.editingWorkplaceId;
+    const wp = state.workplaces.find((w) => w.id === id);
+    if (!wp) return;
+    const count = state.shifts.filter((s) => s.workplaceId === id).length;
+    const msg = count > 0
+      ? `「${wp.name}」を削除しますか？\nこの勤務先のシフト${count}件も一緒に削除されます。`
+      : `「${wp.name}」を削除しますか？`;
+    if (!confirm(msg)) return;
+    state.workplaces = state.workplaces.filter((w) => w.id !== id);
+    state.shifts = state.shifts.filter((s) => s.workplaceId !== id);
+    state.templates = state.templates.filter((t) => t.workplaceId !== id);
+    if (state.activeWorkplaceId === id) state.activeWorkplaceId = null;
+    save();
+    closeWorkplaceModal();
+    switchTab("workplaces");
+  };
   document.getElementById("wp-modal-close").onclick = closeWorkplaceModal;
   document.getElementById("wp-modal-save").onclick = () => {
     const name = document.getElementById("wp-modal-name").value.trim();
@@ -1102,6 +868,31 @@ function init() {
     btn.onclick = () => { state.historyView = btn.dataset.view; renderHistory(); };
   });
   document.getElementById("day-modal-close").onclick = closeDayModal;
+
+  document.getElementById("template-add-btn").onclick = () => openTemplateModal(null);
+  document.getElementById("tmpl-modal-close").onclick = closeTemplateModal;
+  document.getElementById("tmpl-modal-save").onclick = () => {
+    const name = document.getElementById("tmpl-modal-name").value.trim();
+    const workplaceId = document.getElementById("tmpl-modal-workplace").value;
+    const start = document.getElementById("tmpl-modal-start").value;
+    const end = document.getElementById("tmpl-modal-end").value;
+    if (!name) { alert("テンプレート名を入力してください"); return; }
+    if (!workplaceId) { alert("勤務先を選択してください"); return; }
+    const entry = { id: state.editingTemplateId || `tmpl${Date.now()}`, name, workplaceId, start, end };
+    const exists = state.templates.find((t) => t.id === entry.id);
+    state.templates = exists ? state.templates.map((t) => (t.id === entry.id ? entry : t)) : [...state.templates, entry];
+    save();
+    closeTemplateModal();
+    renderTemplateList();
+  };
+
+  document.querySelectorAll(".stepper button").forEach((btn) => {
+    btn.onclick = () => {
+      const input = document.getElementById("add-break");
+      input.value = Math.max(0, (Number(input.value) || 0) + Number(btn.dataset.step));
+      input.dispatchEvent(new Event("input"));
+    };
+  });
 
   switchTab("home");
 }
