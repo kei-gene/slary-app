@@ -102,7 +102,7 @@
     <div class="nav-bar">
       <span class="nav-btn" id="rates-back">← 戻る</span>
       <span class="nav-title" id="rates-title">時給ルール</span>
-      <span class="nav-btn" id="rates-edit-workplace">✎</span>
+      <span class="nav-btn icon-btn" id="rates-edit-workplace"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3"/><path d="M13.5 6.5l4 4"/></svg></span>
     </div>
     <div id="rates-content"></div>
   </section>
@@ -218,6 +218,20 @@
       </div>
       <button id="wp-modal-save" class="btn-primary" style="margin-top:16px">保存</button>
       <button id="wp-modal-delete" class="btn-delete-wide">この勤務先を削除</button>
+    </div>
+  </div>
+
+  <!-- 確認・通知モーダル(ネイティブconfirm/alertの代わり) -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="confirm-modal-title">確認</span>
+      </div>
+      <div id="confirm-modal-message" class="confirm-message"></div>
+      <div class="confirm-btn-row">
+        <button id="confirm-modal-cancel" class="btn-confirm-cancel">キャンセル</button>
+        <button id="confirm-modal-ok" class="btn-primary btn-danger">OK</button>
+      </div>
     </div>
   </div>
 

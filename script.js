@@ -426,11 +426,11 @@ function renderHistoryList() {
   });
   container.querySelectorAll("[data-delete]").forEach((btn) => {
     btn.onclick = () => {
-      if (confirm("このシフトを削除しますか？")) {
+      showConfirm("このシフトを削除しますか？", () => {
         state.shifts = state.shifts.filter((s) => s.id !== btn.dataset.delete);
         save();
         renderHistoryList();
-      }
+      });
     };
   });
 }
@@ -466,13 +466,15 @@ function renderHistoryCalendar() {
       const r = computePay(wp, s.date, s.start, s.end, s.breakMin, state.holidays);
       if (r) totalPay += r.pay;
     });
+    const dow = new Date(dateStr + "T00:00:00").getDay();
     const classes = ["calendar-cell"];
-    if (dayShifts.length > 0) classes.push("has-shift");
+    if (dow === 6) classes.push("sat");
+    if (dow === 0 || state.holidays.includes(dateStr)) classes.push("sun-holiday");
     if (dateStr === todayIso) classes.push("today");
     cellsHtml += `
       <div class="${classes.join(" ")}" data-date="${dateStr}">
         <div class="cal-day-num">${day}</div>
-        ${dayShifts.length > 0 ? `<div class="cal-day-pay">${yen(totalPay)}</div>` : ""}
+        <div class="cal-day-pay">${dayShifts.length > 0 ? yen(totalPay) : ""}</div>
       </div>
     `;
   }
@@ -530,8 +532,8 @@ function renderDayModalList() {
           <div style="color:#8E8E93">${s.start}〜${s.end} ・ ${r ? yen(r.pay) : "―"}</div>
         </div>
         <div class="day-shift-actions">
-          <span data-day-edit="${s.id}">✎</span>
-          <span data-day-delete="${s.id}" style="color:#FF3B30">🗑</span>
+          <span class="icon-btn" data-day-edit="${s.id}">${ICON_EDIT}</span>
+          <span class="icon-btn icon-btn-danger" data-day-delete="${s.id}">${ICON_TRASH}</span>
         </div>
       </div>
     `;
@@ -546,12 +548,12 @@ function renderDayModalList() {
   });
   container.querySelectorAll("[data-day-delete]").forEach((el) => {
     el.onclick = () => {
-      if (confirm("このシフトを削除しますか？")) {
+      showConfirm("このシフトを削除しますか？", () => {
         state.shifts = state.shifts.filter((s) => s.id !== el.dataset.dayDelete);
         save();
         renderDayModalList();
         renderHistoryCalendar();
-      }
+      });
     };
   });
 }
@@ -674,7 +676,7 @@ function renderWorkplaces() {
         <div class="workplace-meta">時給ルール ${w.rates.length}件</div>
       </div>
       <div class="workplace-card-right">
-        <span class="workplace-edit" data-edit-workplace="${w.id}">✎</span>
+        <span class="icon-btn" data-edit-workplace="${w.id}">${ICON_EDIT}</span>
         <span class="chevron">›</span>
       </div>
     </div>
@@ -726,7 +728,7 @@ function renderRates() {
             </div>
             <div class="rate-right">
               <span class="rate-wage">${yen(r.wage)}</span>
-              <span class="rate-delete" data-delete-rate="${r.id}">🗑</span>
+              <span class="icon-btn icon-btn-danger" data-delete-rate="${r.id}">${ICON_TRASH}</span>
             </div>
           </div>
         `).join("");
@@ -833,22 +835,61 @@ function renderDowGroupPicker() {
     `平日: ${weekdayGroupLabel()} ／ 休日: ${holidayGroupLabel()}`;
 }
 
+let expandedHolidayYears = new Set();
+
+function holidayRowHtml(dateStr, name) {
+  return `
+    <div class="holiday-row">
+      <span>${dateStr}${name ? `<span class="holiday-name">${name}</span>` : ""}</span>
+      <span class="icon-btn icon-btn-danger" data-del-holiday="${dateStr}">${ICON_TRASH}</span>
+    </div>
+  `;
+}
+
 function renderHolidayList() {
   const container = document.getElementById("holiday-list");
   if (state.holidays.length === 0) {
     container.innerHTML = `<div class="rate-empty">祝日が登録されていません</div>`;
     return;
   }
-  const sorted = [...state.holidays].sort();
-  container.innerHTML = sorted.map((h) => {
+
+  const byYear = {}; // auto-recognized Japanese holidays, grouped by year
+  const custom = []; // dates the user added that aren't a recognized Japanese holiday
+  [...state.holidays].sort().forEach((h) => {
     const name = japanHolidayName(h);
+    if (name) (byYear[h.slice(0, 4)] = byYear[h.slice(0, 4)] || []).push({ date: h, name });
+    else custom.push(h);
+  });
+
+  const years = Object.keys(byYear).sort();
+  const yearGroupsHtml = years.map((year) => {
+    const open = expandedHolidayYears.has(year);
     return `
-      <div class="holiday-row">
-        <span>${h}${name ? `<span class="holiday-name">${name}</span>` : ""}</span>
-        <span class="holiday-delete" data-del-holiday="${h}">🗑</span>
+      <div class="holiday-year-header" data-year-toggle="${year}">
+        <span>${year}年の祝日（${byYear[year].length}件）</span>
+        <span class="chevron-icon ${open ? "open" : ""}">${ICON_CHEVRON_DOWN}</span>
+      </div>
+      <div class="holiday-year-body ${open ? "" : "hidden"}">
+        ${byYear[year].map((h) => holidayRowHtml(h.date, h.name)).join("")}
       </div>
     `;
   }).join("");
+
+  const customHtml = custom.length > 0
+    ? `<div class="holiday-year-header no-toggle"><span>追加した祝日（${custom.length}件）</span></div>` +
+      custom.map((d) => holidayRowHtml(d, "")).join("")
+    : "";
+
+  container.innerHTML = yearGroupsHtml + customHtml;
+
+  container.querySelectorAll("[data-year-toggle]").forEach((el) => {
+    el.onclick = () => {
+      const year = el.dataset.yearToggle;
+      if (expandedHolidayYears.has(year)) expandedHolidayYears.delete(year);
+      else expandedHolidayYears.add(year);
+      renderHolidayList();
+    };
+  });
   container.querySelectorAll("[data-del-holiday]").forEach((el) => {
     el.onclick = () => {
       state.holidays = state.holidays.filter((h) => h !== el.dataset.delHoliday);
@@ -875,8 +916,8 @@ function renderTemplateList() {
             <div style="color:#8E8E93">${wp ? escapeHtml(wp.name) : "―"} ・ ${t.start}〜${t.end}</div>
           </div>
           <div class="day-shift-actions">
-            <span data-tmpl-edit="${t.id}">✎</span>
-            <span data-tmpl-delete="${t.id}" style="color:#FF3B30">🗑</span>
+            <span class="icon-btn" data-tmpl-edit="${t.id}">${ICON_EDIT}</span>
+            <span class="icon-btn icon-btn-danger" data-tmpl-delete="${t.id}">${ICON_TRASH}</span>
           </div>
         </div>
       `;
@@ -888,11 +929,11 @@ function renderTemplateList() {
   });
   container.querySelectorAll("[data-tmpl-delete]").forEach((el) => {
     el.onclick = () => {
-      if (confirm("このテンプレートを削除しますか？")) {
+      showConfirm("このテンプレートを削除しますか？", () => {
         state.templates = state.templates.filter((t) => t.id !== el.dataset.tmplDelete);
         save();
         renderTemplateList();
-      }
+      });
     };
   });
 }
@@ -915,10 +956,35 @@ function closeTemplateModal() {
 }
 
 // ---------- utils ----------
+const ICON_EDIT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3"/><path d="M13.5 6.5l4 4"/></svg>';
+const ICON_TRASH = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M9.5 7V4.5h5V7"/><path d="M6.5 7l.8 12.2a1 1 0 0 0 1 .8h7.4a1 1 0 0 0 1-.8L17.5 7"/><path d="M10 11v6M14 11v6"/></svg>';
+const ICON_CHEVRON_DOWN = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
+}
+
+// custom confirm/notice modal - replaces native confirm()/alert(), which are unreliable
+// in some mobile browser contexts (installed PWAs, in-app browsers, etc.)
+function showConfirm(message, onConfirm, options = {}) {
+  document.getElementById("confirm-modal-title").textContent = options.title || (onConfirm ? "確認" : "お知らせ");
+  document.getElementById("confirm-modal-message").textContent = message;
+  const okBtn = document.getElementById("confirm-modal-ok");
+  const cancelBtn = document.getElementById("confirm-modal-cancel");
+  const row = cancelBtn.parentElement;
+  const okOnly = !onConfirm;
+  row.classList.toggle("ok-only", okOnly);
+  okBtn.textContent = options.okLabel || (okOnly ? "OK" : "削除する");
+  const modal = document.getElementById("confirm-modal");
+  modal.classList.remove("hidden");
+  const close = () => modal.classList.add("hidden");
+  okBtn.onclick = () => { close(); if (onConfirm) onConfirm(); };
+  cancelBtn.onclick = close;
+}
+function showNotice(message) {
+  showConfirm(message, null);
 }
 
 // ---------- init ----------
@@ -956,19 +1022,20 @@ function init() {
     const msg = count > 0
       ? `「${wp.name}」を削除しますか？\nこの勤務先のシフト${count}件も一緒に削除されます。`
       : `「${wp.name}」を削除しますか？`;
-    if (!confirm(msg)) return;
-    state.workplaces = state.workplaces.filter((w) => w.id !== id);
-    state.shifts = state.shifts.filter((s) => s.workplaceId !== id);
-    state.templates = state.templates.filter((t) => t.workplaceId !== id);
-    if (state.activeWorkplaceId === id) state.activeWorkplaceId = null;
-    save();
-    closeWorkplaceModal();
-    switchTab("workplaces");
+    showConfirm(msg, () => {
+      state.workplaces = state.workplaces.filter((w) => w.id !== id);
+      state.shifts = state.shifts.filter((s) => s.workplaceId !== id);
+      state.templates = state.templates.filter((t) => t.workplaceId !== id);
+      if (state.activeWorkplaceId === id) state.activeWorkplaceId = null;
+      save();
+      closeWorkplaceModal();
+      switchTab("workplaces");
+    });
   };
   document.getElementById("wp-modal-close").onclick = closeWorkplaceModal;
   document.getElementById("wp-modal-save").onclick = () => {
     const name = document.getElementById("wp-modal-name").value.trim();
-    if (!name) { alert("勤務先名を入力してください"); return; }
+    if (!name) { showNotice("勤務先名を入力してください"); return; }
     const wp = state.workplaces.find((w) => w.id === state.editingWorkplaceId);
     wp.name = name;
     wp.payday = Number(document.getElementById("wp-modal-payday").value) || wp.payday;
@@ -991,8 +1058,8 @@ function init() {
     const workplaceId = document.getElementById("tmpl-modal-workplace").value;
     const start = document.getElementById("tmpl-modal-start").value;
     const end = document.getElementById("tmpl-modal-end").value;
-    if (!name) { alert("テンプレート名を入力してください"); return; }
-    if (!workplaceId) { alert("勤務先を選択してください"); return; }
+    if (!name) { showNotice("テンプレート名を入力してください"); return; }
+    if (!workplaceId) { showNotice("勤務先を選択してください"); return; }
     const entry = { id: state.editingTemplateId || `tmpl${Date.now()}`, name, workplaceId, start, end };
     const exists = state.templates.find((t) => t.id === entry.id);
     state.templates = exists ? state.templates.map((t) => (t.id === entry.id ? entry : t)) : [...state.templates, entry];
@@ -1000,6 +1067,22 @@ function init() {
     closeTemplateModal();
     renderTemplateList();
   };
+
+  let touchStartX = null, touchStartY = null;
+  const homeContent = document.getElementById("home-content");
+  homeContent.addEventListener("touchstart", (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  homeContent.addEventListener("touchend", (e) => {
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    touchStartX = null;
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // ignore short or mostly-vertical swipes
+    if (dx < 0 && homeMonthOffset < 1) { homeMonthOffset = 1; renderHome(); }
+    else if (dx > 0 && homeMonthOffset > 0) { homeMonthOffset = 0; renderHome(); }
+  });
 
   document.querySelectorAll(".stepper button").forEach((btn) => {
     btn.onclick = () => {
