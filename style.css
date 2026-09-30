@@ -77,6 +77,7 @@ body {
 }
 
 /* ---- home ---- */
+#home-content { touch-action: pan-y; }
 .home-month { padding: 0 20px 4px; font-size: 13px; color: #8E8E93; }
 .home-month-row {
   display: flex; justify-content: space-between; align-items: center;
@@ -188,7 +189,7 @@ body {
 /* shared icon-button touch target (edit/delete actions everywhere) - min 40x40 tap area */
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; margin: -8px; border-radius: 18px;
+  width: 42px; height: 42px; margin: -11px; border-radius: 21px;
   color: #8E8E93; cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: background-color 0.12s ease;
 }
@@ -201,6 +202,11 @@ body {
 .view-segment .segment-btn { height: 30px; font-size: 12px; padding: 0 10px; flex: none; }
 
 .tmpl-hint { font-size: 12px; color: #8E8E93; padding: 10px 20px 4px; line-height: 1.5; }
+.mode-segment { padding: 12px 20px 0; }
+#multi-date-fields { padding: 0 20px; }
+#multi-date-fields .tmpl-hint { padding: 10px 0 8px; }
+.calendar-cell.selected { background: #007AFF; }
+.calendar-cell.selected .cal-day-num { color: #fff; }
 
 /* ---- weekly template settings (Settings screen) ---- */
 
@@ -296,6 +302,8 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="date"]::-webkit-date-and-time-value,
 input[type="time"]::-webkit-date-and-time-value { text-align: center; min-height: 1.2em; margin: 0; }
+input[type="time"].row-input { min-width: 92px; }
+input[type="date"].row-input { min-width: 128px; }
 
 /* shared chip look: rows, modals, settings */
 .row-input, .modal-input, .holiday-add-row input {
@@ -315,7 +323,7 @@ input[type="time"]::-webkit-date-and-time-value { text-align: center; min-height
 
 /* dropdown arrow */
 select.row-input {
-  padding-right: 32px; text-align: left; text-align-last: left; text-overflow: ellipsis;
+  padding-left: 12px; padding-right: 32px; text-align: right; text-align-last: right; text-overflow: ellipsis;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238E8E93' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center;
 }

@@ -13,6 +13,8 @@
   <!-- ホーム -->
   <section id="screen-home" class="screen active">
     <div id="home-content"></div>
+    <div class="section-label">カレンダー</div>
+    <div id="home-calendar" class="list-pad"></div>
   </section>
 
   <!-- 履歴 -->
@@ -34,6 +36,16 @@
       <span class="nav-btn" id="add-cancel">キャンセル</span>
       <span class="nav-title" id="add-title">シフト追加</span>
       <span class="nav-btn-placeholder"></span>
+    </div>
+
+    <div class="segment mode-segment" id="add-mode-segment">
+      <button class="segment-btn active" id="mode-single" data-mode="single">単発</button>
+      <button class="segment-btn" id="mode-multi" data-mode="multi">複数日まとめて</button>
+    </div>
+
+    <div id="multi-date-fields" class="list-pad hidden">
+      <div class="tmpl-hint" style="padding:0 0 8px">カレンダーの日付をタップして、複数選択できます。</div>
+      <div id="multi-calendar"></div>
     </div>
 
     <div class="card-group" id="shared-fields">

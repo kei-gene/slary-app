@@ -25,6 +25,8 @@ let state = {
   addFresh: false, // true when the add screen was just opened (fields start blank)
   prefillDate: null, // date to pre-fill when opening the add screen from the calendar
   templates: [], // {id, name, workplaceId, start, end} - managed from Settings, selectable on the add screen
+  addMode: "single", // "single" | "multi" (add screen: one shift vs several dates at once)
+  multiDates: new Set(), // selected dates for the current multi-date add session
   holidayWeekdays: new Set([0]), // dow numbers treated as the "holiday" rate group (default: Sunday only)
   autoHolidayYears: [], // years for which Japanese public holidays have already been auto-added to state.holidays
 };
@@ -381,6 +383,8 @@ function renderHome() {
   document.querySelectorAll("#home-month-segment .segment-btn").forEach((btn) => {
     btn.onclick = () => { homeMonthOffset = Number(btn.dataset.offset); renderHome(); };
   });
+
+  renderHomeCalendar();
 }
 
 // ---------- HISTORY ----------
@@ -435,7 +439,12 @@ function renderHistoryList() {
   });
 }
 
-function renderHistoryCalendar() {
+// Renders the month-grid calendar into any container. Home and History both use this,
+// sharing state.calendarMonthOffset, so navigating the month in either one keeps both in sync.
+function renderCalendarInto(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
   const base = new Date();
   base.setDate(1);
   base.setMonth(base.getMonth() + state.calendarMonthOffset);
@@ -479,11 +488,11 @@ function renderHistoryCalendar() {
     `;
   }
 
-  document.getElementById("history-calendar").innerHTML = `
+  container.innerHTML = `
     <div class="calendar-header">
-      <button class="calendar-nav-btn" id="cal-prev">‹</button>
+      <button class="calendar-nav-btn" data-nav="prev">‹</button>
       <span class="calendar-month-label">${year}年${month + 1}月</span>
-      <button class="calendar-nav-btn" id="cal-next">›</button>
+      <button class="calendar-nav-btn" data-nav="next">›</button>
     </div>
     <div class="calendar-grid">
       ${dowLabels.map((l) => `<div class="calendar-dow">${l}</div>`).join("")}
@@ -491,12 +500,16 @@ function renderHistoryCalendar() {
     </div>
   `;
 
-  document.getElementById("cal-prev").onclick = () => { state.calendarMonthOffset--; renderHistoryCalendar(); };
-  document.getElementById("cal-next").onclick = () => { state.calendarMonthOffset++; renderHistoryCalendar(); };
-  document.querySelectorAll("#history-calendar [data-date]").forEach((cell) => {
+  container.querySelector('[data-nav="prev"]').onclick = () => { state.calendarMonthOffset--; renderAllCalendars(); };
+  container.querySelector('[data-nav="next"]').onclick = () => { state.calendarMonthOffset++; renderAllCalendars(); };
+  container.querySelectorAll("[data-date]").forEach((cell) => {
     cell.onclick = () => openDayModal(cell.dataset.date);
   });
 }
+
+function renderHistoryCalendar() { renderCalendarInto("history-calendar"); }
+function renderHomeCalendar() { renderCalendarInto("home-calendar"); }
+function renderAllCalendars() { renderHistoryCalendar(); renderHomeCalendar(); }
 
 // ---------- day detail modal (calendar) ----------
 function openDayModal(dateStr) {
@@ -552,7 +565,7 @@ function renderDayModalList() {
         state.shifts = state.shifts.filter((s) => s.id !== el.dataset.dayDelete);
         save();
         renderDayModalList();
-        renderHistoryCalendar();
+        renderAllCalendars();
       });
     };
   });
@@ -568,8 +581,23 @@ function renderAddScreen() {
   const editing = state.editingShiftId ? state.shifts.find((s) => s.id === state.editingShiftId) : null;
   document.getElementById("add-title").textContent = editing ? "シフトを編集" : "シフト追加";
 
-  // editing an existing shift is always single-mode; bulk only applies to brand-new shifts
+  // editing an existing shift is always single-mode; multi-date mode only applies to brand-new shifts
+  if (editing) state.addMode = "single";
   const fresh = state.addFresh && !editing;
+  if (fresh) { state.multiDates = new Set(); multiCalendarOffset = 0; }
+
+  document.getElementById("add-mode-segment").classList.toggle("hidden", !!editing);
+  document.querySelectorAll("#add-mode-segment .segment-btn").forEach((b) => {
+    b.classList.toggle("active", b.dataset.mode === state.addMode);
+  });
+  document.getElementById("mode-single").onclick = () => { state.addMode = "single"; renderAddScreen(); };
+  document.getElementById("mode-multi").onclick = () => { state.addMode = "multi"; renderAddScreen(); };
+
+  const isMulti = state.addMode === "multi" && !editing;
+  document.getElementById("multi-date-fields").classList.toggle("hidden", !isMulti);
+  document.getElementById("single-date-row").classList.toggle("hidden", isMulti);
+  if (isMulti) renderMultiDatePicker();
+
   const startEl = document.getElementById("add-start");
   const endEl = document.getElementById("add-end");
   const breakEl = document.getElementById("add-break");
@@ -620,6 +648,7 @@ function renderAddScreen() {
   document.getElementById("add-cancel").onclick = () => { state.editingShiftId = null; switchTab("home"); };
 
   document.getElementById("add-save").onclick = () => {
+    if (isMulti) { saveMultiShifts(); return; }
     const shift = {
       id: editing ? editing.id : `s${Date.now()}`,
       workplaceId: wpSelect.value,
@@ -641,15 +670,42 @@ function renderAddScreen() {
 
 function updateAddResult() {
   const wp = state.workplaces.find((w) => w.id === document.getElementById("add-workplace").value);
-  const date = document.getElementById("add-date").value;
   const start = document.getElementById("add-start").value;
   const end = document.getElementById("add-end").value;
   const breakMin = Number(document.getElementById("add-break").value) || 0;
-
-  const result = computePay(wp, date, start, end, breakMin, state.holidays);
   const box = document.getElementById("add-result");
   const saveBtn = document.getElementById("add-save");
 
+  if (state.addMode === "multi") {
+    const dates = [...state.multiDates].sort();
+    if (!wp || !start || !end) {
+      box.className = "result-card";
+      box.innerHTML = `勤務先と出勤・退勤時間を入力してください`;
+      saveBtn.disabled = true;
+      return;
+    }
+    if (dates.length === 0) {
+      box.className = "result-card";
+      box.innerHTML = `カレンダーから日付を選んでください`;
+      saveBtn.disabled = true;
+      return;
+    }
+    let totalPay = 0;
+    dates.forEach((d) => {
+      const r = computePay(wp, d, start, end, breakMin, state.holidays);
+      if (r) totalPay += r.pay;
+    });
+    box.className = "result-card has-value";
+    box.innerHTML = `
+      <div class="result-row"><span>選択した日数</span><span style="font-weight:600">${dates.length}日</span></div>
+      <div class="result-pay"><span>合計の給与目安</span><span class="amount">${yen(totalPay)}</span></div>
+    `;
+    saveBtn.disabled = false;
+    return;
+  }
+
+  const date = document.getElementById("add-date").value;
+  const result = computePay(wp, date, start, end, breakMin, state.holidays);
   if (result) {
     box.className = "result-card has-value";
     box.innerHTML = `
@@ -663,6 +719,88 @@ function updateAddResult() {
     box.innerHTML = `勤務先と出勤・退勤時間を入力してください`;
     saveBtn.disabled = true;
   }
+}
+
+// ---------- multi-date picker (add screen) ----------
+let multiCalendarOffset = 0;
+
+function renderMultiDatePicker() {
+  const container = document.getElementById("multi-calendar");
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() + multiCalendarOffset);
+  const year = base.getFullYear();
+  const month = base.getMonth();
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayIso = todayStr();
+  const dowLabels = ["日", "月", "火", "水", "木", "金", "土"];
+
+  let cellsHtml = "";
+  for (let i = 0; i < firstDow; i++) cellsHtml += `<div class="calendar-cell empty"></div>`;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const dow = new Date(dateStr + "T00:00:00").getDay();
+    const classes = ["calendar-cell"];
+    if (dow === 6) classes.push("sat");
+    if (dow === 0 || state.holidays.includes(dateStr)) classes.push("sun-holiday");
+    if (dateStr === todayIso) classes.push("today");
+    if (state.multiDates.has(dateStr)) classes.push("selected");
+    cellsHtml += `
+      <div class="${classes.join(" ")}" data-date="${dateStr}">
+        <div class="cal-day-num">${day}</div>
+        <div class="cal-day-pay"></div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div class="calendar-header">
+      <button class="calendar-nav-btn" data-nav="prev">‹</button>
+      <span class="calendar-month-label">${year}年${month + 1}月</span>
+      <button class="calendar-nav-btn" data-nav="next">›</button>
+    </div>
+    <div class="calendar-grid">
+      ${dowLabels.map((l) => `<div class="calendar-dow">${l}</div>`).join("")}
+      ${cellsHtml}
+    </div>
+  `;
+
+  container.querySelector('[data-nav="prev"]').onclick = () => { multiCalendarOffset--; renderMultiDatePicker(); };
+  container.querySelector('[data-nav="next"]').onclick = () => { multiCalendarOffset++; renderMultiDatePicker(); };
+  container.querySelectorAll("[data-date]").forEach((cell) => {
+    cell.onclick = () => {
+      const d = cell.dataset.date;
+      if (state.multiDates.has(d)) state.multiDates.delete(d);
+      else state.multiDates.add(d);
+      renderMultiDatePicker();
+      updateAddResult();
+    };
+  });
+}
+
+function saveMultiShifts() {
+  const workplaceId = document.getElementById("add-workplace").value;
+  const start = document.getElementById("add-start").value;
+  const end = document.getElementById("add-end").value;
+  const breakMin = Number(document.getElementById("add-break").value) || 0;
+  const dates = [...state.multiDates];
+  if (!workplaceId || !start || !end || dates.length === 0) return;
+
+  const existingSet = new Set(state.shifts.filter((s) => s.workplaceId === workplaceId).map((s) => s.date));
+  const toAdd = dates.filter((d) => !existingSet.has(d));
+
+  if (toAdd.length === 0) {
+    showNotice("選択した日付はすべて既に登録されています");
+    return;
+  }
+
+  toAdd.forEach((d, i) => {
+    state.shifts.push({ id: `s${Date.now()}_${i}`, workplaceId, date: d, start, end, breakMin });
+  });
+  save();
+  state.multiDates = new Set();
+  switchTab("home");
 }
 
 // ---------- WORKPLACES ----------
@@ -956,8 +1094,8 @@ function closeTemplateModal() {
 }
 
 // ---------- utils ----------
-const ICON_EDIT = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3"/><path d="M13.5 6.5l4 4"/></svg>';
-const ICON_TRASH = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M9.5 7V4.5h5V7"/><path d="M6.5 7l.8 12.2a1 1 0 0 0 1 .8h7.4a1 1 0 0 0 1-.8L17.5 7"/><path d="M10 11v6M14 11v6"/></svg>';
+const ICON_EDIT = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3"/><path d="M13.5 6.5l4 4"/></svg>';
+const ICON_TRASH = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M9.5 7V4.5h5V7"/><path d="M6.5 7l.8 12.2a1 1 0 0 0 1 .8h7.4a1 1 0 0 0 1-.8L17.5 7"/><path d="M10 11v6M14 11v6"/></svg>';
 const ICON_CHEVRON_DOWN = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
 
 function escapeHtml(str) {
@@ -1079,10 +1217,11 @@ function init() {
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = e.changedTouches[0].clientY - touchStartY;
     touchStartX = null;
-    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // ignore short or mostly-vertical swipes
+    if (Math.abs(dx) < 35 || Math.abs(dx) < Math.abs(dy)) return; // ignore short or mostly-vertical swipes
     if (dx < 0 && homeMonthOffset < 1) { homeMonthOffset = 1; renderHome(); }
     else if (dx > 0 && homeMonthOffset > 0) { homeMonthOffset = 0; renderHome(); }
-  });
+  }, { passive: true });
+  homeContent.addEventListener("touchcancel", () => { touchStartX = null; }, { passive: true });
 
   document.querySelectorAll(".stepper button").forEach((btn) => {
     btn.onclick = () => {
