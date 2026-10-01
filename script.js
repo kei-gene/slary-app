@@ -27,6 +27,7 @@ let state = {
   templates: [], // {id, name, workplaceId, start, end} - managed from Settings, selectable on the add screen
   addMode: "single", // "single" | "multi" (add screen: one shift vs several dates at once)
   multiDates: new Set(), // selected dates for the current multi-date add session
+  addScreenStyle: "toggle", // "toggle" (単発/複数日 switch) | "unified" (calendar-first, always) - set from Settings
   holidayWeekdays: new Set([0]), // dow numbers treated as the "holiday" rate group (default: Sunday only)
   autoHolidayYears: [], // years for which Japanese public holidays have already been auto-added to state.holidays
 };
@@ -265,6 +266,7 @@ function save() {
     templates: state.templates,
     holidayWeekdays: [...state.holidayWeekdays],
     autoHolidayYears: state.autoHolidayYears,
+    addScreenStyle: state.addScreenStyle,
   }));
 }
 
@@ -282,6 +284,7 @@ function load() {
       if (Array.isArray(parsed.templates)) state.templates = parsed.templates;
       if (Array.isArray(parsed.holidayWeekdays)) state.holidayWeekdays = new Set(parsed.holidayWeekdays);
       if (Array.isArray(parsed.autoHolidayYears)) state.autoHolidayYears = parsed.autoHolidayYears;
+      if (parsed.addScreenStyle === "toggle" || parsed.addScreenStyle === "unified") state.addScreenStyle = parsed.addScreenStyle;
     }
   } catch (e) {
     console.error("読み込みエラー", e);
@@ -381,10 +384,14 @@ function renderHome() {
   const amountBlock = document.getElementById("home-amount-block");
   if (byWorkplace.length > 1) amountBlock.onclick = () => { showBreakdown = !showBreakdown; renderHome(); };
   document.querySelectorAll("#home-month-segment .segment-btn").forEach((btn) => {
-    btn.onclick = () => { homeMonthOffset = Number(btn.dataset.offset); renderHome(); };
+    btn.onclick = () => {
+      homeMonthOffset = Number(btn.dataset.offset);
+      state.calendarMonthOffset = homeMonthOffset;
+      renderHome();
+    };
   });
 
-  renderHomeCalendar();
+  renderAllCalendars();
 }
 
 // ---------- HISTORY ----------
@@ -576,6 +583,13 @@ function closeDayModal() {
   document.getElementById("day-modal").classList.add("hidden");
 }
 
+// true when the add screen should show the multi-date calendar picker: either the user
+// switched to "複数日" mode, or the unified add-screen style is active (always calendar-first).
+// Never true while editing an existing shift - editing is always a single-shift form.
+function isAddMultiMode() {
+  return !state.editingShiftId && (state.addMode === "multi" || state.addScreenStyle === "unified");
+}
+
 // ---------- ADD / EDIT SHIFT ----------
 function renderAddScreen() {
   const editing = state.editingShiftId ? state.shifts.find((s) => s.id === state.editingShiftId) : null;
@@ -586,14 +600,15 @@ function renderAddScreen() {
   const fresh = state.addFresh && !editing;
   if (fresh) { state.multiDates = new Set(); multiCalendarOffset = 0; }
 
-  document.getElementById("add-mode-segment").classList.toggle("hidden", !!editing);
+  const showModeSegment = !editing && state.addScreenStyle === "toggle";
+  document.getElementById("add-mode-segment").classList.toggle("hidden", !showModeSegment);
   document.querySelectorAll("#add-mode-segment .segment-btn").forEach((b) => {
     b.classList.toggle("active", b.dataset.mode === state.addMode);
   });
   document.getElementById("mode-single").onclick = () => { state.addMode = "single"; renderAddScreen(); };
   document.getElementById("mode-multi").onclick = () => { state.addMode = "multi"; renderAddScreen(); };
 
-  const isMulti = state.addMode === "multi" && !editing;
+  const isMulti = isAddMultiMode();
   document.getElementById("multi-date-fields").classList.toggle("hidden", !isMulti);
   document.getElementById("single-date-row").classList.toggle("hidden", isMulti);
   if (isMulti) renderMultiDatePicker();
@@ -676,7 +691,7 @@ function updateAddResult() {
   const box = document.getElementById("add-result");
   const saveBtn = document.getElementById("add-save");
 
-  if (state.addMode === "multi") {
+  if (isAddMultiMode()) {
     const dates = [...state.multiDates].sort();
     if (!wp || !start || !end) {
       box.className = "result-card";
@@ -688,6 +703,24 @@ function updateAddResult() {
       box.className = "result-card";
       box.innerHTML = `カレンダーから日付を選んでください`;
       saveBtn.disabled = true;
+      return;
+    }
+    if (dates.length === 1) {
+      // exactly one date selected: show it the same way the single-shift form would
+      const result = computePay(wp, dates[0], start, end, breakMin, state.holidays);
+      if (result) {
+        box.className = "result-card has-value";
+        box.innerHTML = `
+          <div class="result-row"><span>実働時間</span><span style="font-weight:600">${fmtMin(result.workedMinutes)}</span></div>
+          <div class="result-pay"><span>${fmtDate(dates[0])}の給与</span><span class="amount">${yen(result.pay)}</span></div>
+          ${result.uncoveredMinutes > 0 ? `<div class="result-warn">⚠ ${fmtMin(result.uncoveredMinutes)}分は時給ルールが未設定です</div>` : ""}
+        `;
+        saveBtn.disabled = false;
+      } else {
+        box.className = "result-card";
+        box.innerHTML = `出勤・退勤時間を入力してください`;
+        saveBtn.disabled = true;
+      }
       return;
     }
     let totalPay = 0;
@@ -952,6 +985,31 @@ function renderSettings() {
   };
   renderDowGroupPicker();
   renderTemplateList();
+  renderAddStyleSetting();
+}
+
+function renderAddStyleSetting() {
+  const container = document.getElementById("add-style-list");
+  const options = [
+    { key: "toggle", label: "①単発/複数日選択", desc: "「単発」「複数日まとめて」をボタンで切り替えて使う" },
+    { key: "unified", label: "②シフト追加（統一バージョン）", desc: "カレンダーで日付を選ぶだけ。1日でも複数日でも同じ画面で登録できる" },
+  ];
+  container.innerHTML = options.map((o) => `
+    <div class="addstyle-row" data-style="${o.key}">
+      <div>
+        <div class="addstyle-label">${o.label}</div>
+        <div class="addstyle-desc">${o.desc}</div>
+      </div>
+      ${state.addScreenStyle === o.key ? ICON_CHECK : ""}
+    </div>
+  `).join("");
+  container.querySelectorAll("[data-style]").forEach((el) => {
+    el.onclick = () => {
+      state.addScreenStyle = el.dataset.style;
+      save();
+      renderAddStyleSetting();
+    };
+  });
 }
 
 function renderDowGroupPicker() {
@@ -1097,6 +1155,7 @@ function closeTemplateModal() {
 const ICON_EDIT = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3"/><path d="M13.5 6.5l4 4"/></svg>';
 const ICON_TRASH = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M9.5 7V4.5h5V7"/><path d="M6.5 7l.8 12.2a1 1 0 0 0 1 .8h7.4a1 1 0 0 0 1-.8L17.5 7"/><path d="M10 11v6M14 11v6"/></svg>';
 const ICON_CHEVRON_DOWN = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#007AFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
 
 function escapeHtml(str) {
   const div = document.createElement("div");
@@ -1218,8 +1277,8 @@ function init() {
     const dy = e.changedTouches[0].clientY - touchStartY;
     touchStartX = null;
     if (Math.abs(dx) < 35 || Math.abs(dx) < Math.abs(dy)) return; // ignore short or mostly-vertical swipes
-    if (dx < 0 && homeMonthOffset < 1) { homeMonthOffset = 1; renderHome(); }
-    else if (dx > 0 && homeMonthOffset > 0) { homeMonthOffset = 0; renderHome(); }
+    if (dx < 0 && homeMonthOffset < 1) { homeMonthOffset = 1; state.calendarMonthOffset = homeMonthOffset; renderHome(); }
+    else if (dx > 0 && homeMonthOffset > 0) { homeMonthOffset = 0; state.calendarMonthOffset = homeMonthOffset; renderHome(); }
   }, { passive: true });
   homeContent.addEventListener("touchcancel", () => { touchStartX = null; }, { passive: true });
 

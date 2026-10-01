@@ -158,6 +158,16 @@ body {
 .chevron-icon { display: flex; color: #8E8E93; transition: transform 0.15s ease; }
 .chevron-icon.open { transform: rotate(180deg); }
 .holiday-year-body .holiday-row { padding-left: 16px; }
+
+.addstyle-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 14px 16px; border-bottom: 0.5px solid #E5E5EA; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.addstyle-row:last-child { border-bottom: none; }
+.addstyle-row:active { background: #F2F2F7; }
+.addstyle-label { font-size: 14px; font-weight: 600; }
+.addstyle-desc { font-size: 12px; color: #8E8E93; margin-top: 3px; line-height: 1.5; }
 .holiday-add-row { display: flex; gap: 8px; margin-top: 10px; }
 .holiday-add-row input { flex: 1; height: 40px; border-radius: 10px; border: 0.5px solid #D1D1D6; padding: 0 10px; font-size: 14px; font-family: inherit; }
 .btn-small { width: 60px; border-radius: 10px; border: none; background: #007AFF; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
@@ -205,8 +215,6 @@ body {
 .mode-segment { padding: 12px 20px 0; }
 #multi-date-fields { padding: 0 20px; }
 #multi-date-fields .tmpl-hint { padding: 10px 0 8px; }
-.calendar-cell.selected { background: #007AFF; }
-.calendar-cell.selected .cal-day-num { color: #fff; }
 
 /* ---- weekly template settings (Settings screen) ---- */
 
@@ -231,6 +239,8 @@ body {
 .calendar-cell.empty { background: transparent; cursor: default; }
 .calendar-cell.sat { background: rgba(0, 122, 255, 0.12); }
 .calendar-cell.sun-holiday { background: rgba(255, 59, 48, 0.12); }
+.calendar-cell.selected { background: #007AFF; }
+.calendar-cell.selected .cal-day-num { color: #fff; }
 .calendar-cell.today { box-shadow: inset 0 0 0 1.5px #007AFF; }
 .cal-day-num { font-size: 12px; font-weight: 600; color: #1C1C1E; line-height: 1; }
 .cal-day-pay { font-size: 9px; color: #1A7A3E; margin-top: auto; padding-bottom: 6px; font-weight: 600; line-height: 1; min-height: 9px; }
