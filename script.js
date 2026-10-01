@@ -38,7 +38,9 @@ function defaultWorkplaces() {
     {
       id: "w1",
       name: "コンビニA",
+      paydayType: "fixed",
       payday: 25,
+      closingType: "fixed",
       closingDay: 20,
       rates: [
         { id: "r1", dayType: "weekday", start: "09:00", end: "17:00", wage: 1295 },
@@ -375,6 +377,7 @@ function renderHome() {
       <div class="stat-card"><div class="stat-label">勤務予定時間</div><div class="stat-value">${(totalMinutes / 60).toFixed(1)}h</div></div>
       <div class="stat-card"><div class="stat-label">勤務予定日数</div><div class="stat-value">${monthShifts.length}日</div></div>
     </div>
+    ${payoutSectionHtml()}
     <div class="bottom-pad" style="padding-top:0">
       <button class="btn-primary btn-danger" id="home-add-btn">＋ シフトを追加</button>
     </div>
@@ -476,11 +479,11 @@ function renderCalendarInto(containerId) {
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dayShifts = byDate[dateStr] || [];
-    let totalPay = 0;
+    let totalPay = 0, totalMinutes = 0;
     dayShifts.forEach((s) => {
       const wp = state.workplaces.find((w) => w.id === s.workplaceId);
       const r = computePay(wp, s.date, s.start, s.end, s.breakMin, state.holidays);
-      if (r) totalPay += r.pay;
+      if (r) { totalPay += r.pay; totalMinutes += r.workedMinutes; }
     });
     const dow = new Date(dateStr + "T00:00:00").getDay();
     const classes = ["calendar-cell"];
@@ -491,6 +494,7 @@ function renderCalendarInto(containerId) {
       <div class="${classes.join(" ")}" data-date="${dateStr}">
         <div class="cal-day-num">${day}</div>
         <div class="cal-day-pay">${dayShifts.length > 0 ? yen(totalPay) : ""}</div>
+        <div class="cal-day-hours">${dayShifts.length > 0 ? (totalMinutes / 60).toFixed(1) + "h" : ""}</div>
       </div>
     `;
   }
@@ -515,6 +519,39 @@ function renderCalendarInto(containerId) {
 }
 
 function renderHistoryCalendar() { renderCalendarInto("history-calendar"); }
+// "今月いくら" (calendar-month totals) is separate from this: this shows what each workplace will
+// actually pay out on its next real payday, based on that workplace's closing/payday settings.
+function payoutSectionHtml() {
+  if (state.workplaces.length === 0) return "";
+  const today = new Date();
+
+  const cards = state.workplaces.map((wp) => {
+    const payout = getNextPayout(wp, today);
+    if (!payout) return "";
+    let amount = 0;
+    state.shifts.filter((s) => s.workplaceId === wp.id).forEach((s) => {
+      const d = new Date(s.date + "T00:00:00");
+      if (d >= payout.periodStart && d <= payout.periodEnd) {
+        const r = computePay(wp, s.date, s.start, s.end, s.breakMin, state.holidays);
+        if (r) amount += r.pay;
+      }
+    });
+    return `
+      <div class="payout-card">
+        <div class="payout-top">
+          <span class="payout-workplace">${escapeHtml(wp.name)}</span>
+          <span class="payout-date">${fmtDateObj(payout.payday)}</span>
+        </div>
+        <div class="payout-period">対象期間: ${fmtDateObj(payout.periodStart)}〜${fmtDateObj(payout.periodEnd)}</div>
+        <div class="payout-amount">${yen(amount)}</div>
+      </div>
+    `;
+  }).join("");
+
+  if (!cards) return "";
+  return `<div class="section-label" style="padding-top:0">次の給料日</div><div class="payout-list">${cards}</div>`;
+}
+
 function renderHomeCalendar() { renderCalendarInto("home-calendar"); }
 function renderAllCalendars() { renderHistoryCalendar(); renderHomeCalendar(); }
 
@@ -783,6 +820,7 @@ function renderMultiDatePicker() {
       <div class="${classes.join(" ")}" data-date="${dateStr}">
         <div class="cal-day-num">${day}</div>
         <div class="cal-day-pay"></div>
+        <div class="cal-day-hours"></div>
       </div>
     `;
   }
@@ -843,7 +881,7 @@ function renderWorkplaces() {
     <div class="workplace-card" data-open="${w.id}">
       <div>
         <div class="workplace-name">${escapeHtml(w.name)}</div>
-        <div class="workplace-meta">給料日: ${w.payday}日 ・ 締め日: ${w.closingDay}日</div>
+        <div class="workplace-meta">給料日: ${formatDateRule(w.paydayType || "fixed", w.payday)} ・ 締め日: ${formatDateRule(w.closingType || "fixed", w.closingDay)}</div>
         <div class="workplace-meta">時給ルール ${w.rates.length}件</div>
       </div>
       <div class="workplace-card-right">
@@ -866,7 +904,7 @@ function renderWorkplaces() {
 
   document.getElementById("workplace-add-btn").onclick = () => {
     const id = `w${Date.now()}`;
-    const newWorkplace = { id, name: "新しい勤務先", payday: 25, closingDay: 20, rates: [] };
+    const newWorkplace = { id, name: "新しい勤務先", paydayType: "fixed", payday: 25, closingType: "fixed", closingDay: 20, rates: [] };
     state.workplaces.push(newWorkplace);
     save();
     state.activeWorkplaceId = id;
@@ -952,17 +990,87 @@ function closeRateModal() {
 }
 
 // ---------- WORKPLACE EDIT MODAL ----------
+function setDateRuleType(segmentId, inputId, type) {
+  document.querySelectorAll(`#${segmentId} .segment-btn`).forEach((b) => {
+    b.classList.toggle("active", b.dataset.type === type);
+  });
+  document.getElementById(inputId).classList.toggle("hidden", type !== "fixed");
+}
+
+function wireDateRuleSegment(segmentId, inputId) {
+  document.querySelectorAll(`#${segmentId} .segment-btn`).forEach((btn) => {
+    btn.onclick = () => setDateRuleType(segmentId, inputId, btn.dataset.type);
+  });
+}
+
 function openWorkplaceModal(workplace) {
   state.editingWorkplaceId = workplace.id;
   document.getElementById("wp-modal-name").value = workplace.name;
-  document.getElementById("wp-modal-payday").value = workplace.payday;
+
   document.getElementById("wp-modal-closing").value = workplace.closingDay;
+  setDateRuleType("wp-modal-closing-type", "wp-modal-closing", workplace.closingType || "fixed");
+
+  document.getElementById("wp-modal-payday").value = workplace.payday;
+  setDateRuleType("wp-modal-payday-type", "wp-modal-payday", workplace.paydayType || "fixed");
+
   document.getElementById("workplace-modal").classList.remove("hidden");
 }
 
 function closeWorkplaceModal() {
   state.editingWorkplaceId = null;
   document.getElementById("workplace-modal").classList.add("hidden");
+}
+
+// day-config helpers: resolve "fixed"/"endOfMonth"/"lastWeekday" into an actual date for a given month,
+// and format one for display. month is 0-indexed (JS Date convention).
+function resolveDateRule(type, day, year, month) {
+  const lastDate = new Date(year, month + 1, 0); // last calendar day of the month
+  if (type === "endOfMonth") return lastDate;
+  if (type === "lastWeekday") {
+    const d = new Date(lastDate);
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+    return d;
+  }
+  return new Date(year, month, Math.min(Number(day) || 1, lastDate.getDate()));
+}
+function formatDateRule(type, day) {
+  if (type === "endOfMonth") return "月末";
+  if (type === "lastWeekday") return "月末最後の平日";
+  return `${day}日`;
+}
+function fmtDateObj(d) {
+  return `${d.getMonth() + 1}月${d.getDate()}日(${DOW_LABELS[d.getDay()]})`;
+}
+function stripTime(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+// For a workplace, finds the next upcoming payday and the shift period (closing-to-closing) it covers.
+function getNextPayout(workplace, today) {
+  const closingFor = (y, m) => resolveDateRule(workplace.closingType || "fixed", workplace.closingDay, y, m);
+  const paydayFor = (y, m) => resolveDateRule(workplace.paydayType || "fixed", workplace.payday, y, m);
+  const todayStripped = stripTime(today);
+
+  const candidates = [];
+  for (let offset = -1; offset <= 2; offset++) {
+    const base = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+    const y = base.getFullYear(), m = base.getMonth();
+    const close = closingFor(y, m);
+    const sameMonthPayday = paydayFor(y, m);
+    let payday;
+    if (sameMonthPayday > close) {
+      payday = sameMonthPayday;
+    } else {
+      const next = new Date(y, m + 1, 1);
+      payday = paydayFor(next.getFullYear(), next.getMonth());
+    }
+    const prev = new Date(y, m - 1, 1);
+    const periodStart = new Date(closingFor(prev.getFullYear(), prev.getMonth()));
+    periodStart.setDate(periodStart.getDate() + 1);
+    candidates.push({ payday: stripTime(payday), periodStart: stripTime(periodStart), periodEnd: stripTime(close) });
+  }
+  const upcoming = candidates.filter((c) => c.payday >= todayStripped).sort((a, b) => a.payday - b.payday);
+  return upcoming[0] || null;
 }
 
 // ---------- SETTINGS ----------
@@ -1230,17 +1338,22 @@ function init() {
     });
   };
   document.getElementById("wp-modal-close").onclick = closeWorkplaceModal;
+  wireDateRuleSegment("wp-modal-closing-type", "wp-modal-closing");
+  wireDateRuleSegment("wp-modal-payday-type", "wp-modal-payday");
   document.getElementById("wp-modal-save").onclick = () => {
     const name = document.getElementById("wp-modal-name").value.trim();
     if (!name) { showNotice("勤務先名を入力してください"); return; }
     const wp = state.workplaces.find((w) => w.id === state.editingWorkplaceId);
     wp.name = name;
-    wp.payday = Number(document.getElementById("wp-modal-payday").value) || wp.payday;
+    wp.closingType = document.querySelector("#wp-modal-closing-type .segment-btn.active")?.dataset.type || "fixed";
     wp.closingDay = Number(document.getElementById("wp-modal-closing").value) || wp.closingDay;
+    wp.paydayType = document.querySelector("#wp-modal-payday-type .segment-btn.active")?.dataset.type || "fixed";
+    wp.payday = Number(document.getElementById("wp-modal-payday").value) || wp.payday;
     save();
     closeWorkplaceModal();
     renderWorkplaces();
     if (state.tab === "rates") renderRates();
+    renderHome();
   };
 
   document.querySelectorAll("#history-view-segment .segment-btn").forEach((btn) => {
