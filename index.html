@@ -2,281 +2,369 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>時給・給与管理アプリ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>シフト・作業スケジュール</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header class="top">
+  <h1>シフト・作業スケジュール</h1>
+  <nav class="tabs">
+    <button class="tab active" data-tab="home"><span class="lg">ホーム</span><span class="sh">ホーム</span></button>
+    <button class="tab" data-tab="shift"><span class="lg">シフト管理</span><span class="sh">シフト</span></button>
+    <button class="tab" data-tab="setup"><span class="lg">作業スケジュール作成</span><span class="sh">作成</span></button>
+    <button class="tab" data-tab="settings"><span class="lg">設定</span><span class="sh">設定</span></button>
+  </nav>
+  <!-- 仮の切り替え（従業員用画面ができたら、この .mode ブロックごと削除できます） -->
+  <div class="mode" data-temp>
+    <span class="temp">仮</span><span>表示切替</span>
+    <div class="mgroup">
+      <button type="button" class="mbtn active" data-mode="admin">管理者</button>
+      <button type="button" class="mbtn" data-mode="employee">従業員</button>
+      <button type="button" class="mbtn" data-mode="dev">開発者</button>
+    </div>
+  </div>
+</header>
 
-<div class="app">
-
-  <!-- ホーム -->
-  <section id="screen-home" class="screen active">
-    <div id="home-content"></div>
-    <div class="section-label">カレンダー</div>
-    <div id="home-calendar" class="list-pad"></div>
-  </section>
-
-  <!-- 履歴 -->
-  <section id="screen-history" class="screen">
-    <div class="header-row">
-      <span class="header-title">勤務履歴</span>
-      <div class="segment view-segment" id="history-view-segment">
-        <button class="segment-btn active" data-view="list">リスト</button>
-        <button class="segment-btn" data-view="calendar">カレンダー</button>
+<main>
+  <section id="home" class="panel active">
+    <div class="toolbar">
+      <div>
+        <p class="hint">マスをクリックすると、その時間の勤務を入れたり外したりできます。</p>
+        <p id="total" class="total"></p>
+      </div>
+      <div class="actions">
+        <button id="btnAutoHome" class="btn primary">自動作成</button>
+        <button id="btnClear" class="btn">スケジュールを消去</button>
       </div>
     </div>
-    <div id="history-list" class="list-pad"></div>
-    <div id="history-calendar" class="list-pad hidden"></div>
+    <div class="sortbar">
+      <label class="inline">並び替え<select id="hSort"></select></label>
+      <button type="button" class="btn small" id="hDir"></button>
+    </div>
+    <div id="legend" class="legend"></div>
+    <div id="gantt" class="gantt-wrap"></div>
   </section>
 
-  <!-- シフト追加/編集 -->
-  <section id="screen-add" class="screen">
-    <div class="nav-bar">
-      <span class="nav-btn" id="add-cancel">キャンセル</span>
-      <span class="nav-title" id="add-title">シフト追加</span>
-      <span class="nav-btn-placeholder"></span>
+  <section id="shift" class="panel">
+    <div class="toolbar">
+      <div class="weeknav">
+        <button type="button" class="btn small" id="wPrev">‹ 前の期間</button>
+        <button type="button" class="btn small" id="wToday">今の期間</button>
+        <button type="button" class="btn small" id="wNext">次の期間 ›</button>
+        <input type="date" id="wJump" aria-label="表示する期間の日付">
+        <strong id="wLabel"></strong>
+        <span id="wStatus" class="pill"></span>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="wAuto">自動作成</button>
+        <button type="button" class="btn" id="wCopy">前の期間をコピー</button>
+        <button type="button" class="btn" id="wClear">この期間を空にする</button>
+        <button type="button" class="btn primary" id="wPublish">確定する</button>
+      </div>
     </div>
-
-    <div class="segment mode-segment" id="add-mode-segment">
-      <button class="segment-btn active" id="mode-single" data-mode="single">単発</button>
-      <button class="segment-btn" id="mode-multi" data-mode="multi">複数日まとめて</button>
+    <div class="dlbar">
+      <label class="inline">提出締切<input type="date" id="wDeadline" aria-label="希望シフトの提出締切"></label>
+      <button type="button" class="btn small" id="wDlClear">解除</button>
+      <span id="wDlInfo" class="pill"></span>
     </div>
-
-    <div id="multi-date-fields" class="list-pad hidden">
-      <div class="tmpl-hint" style="padding:0 0 8px">カレンダーの日付をタップして、複数選択できます。</div>
-      <div id="multi-calendar"></div>
+    <p class="hint">従業員が提出した希望が表に出ます（<b>休</b>＝希望休、<b>○</b>＝出勤可能、時間＝その時間だけ可能）。マスをクリックしてシフトを入れます。希望休の日に入れるときは確認が出ます。期間の長さは設定タブで変えられます。</p>
+    <div class="legend-shift">
+      <span><i class="lg pf-off"></i>希望休（本人の希望）</span>
+      <span><i class="lg rest"></i>休み（こちらで指定）</span>
+      <span><i class="lg pf-ok"></i>○ 未決定（出勤可能）</span>
+      <span><i class="lg pf-time"></i>時間指定（その時間だけ可能）</span>
+      <span><i class="lg work"></i>シフト（役割の色）</span>
     </div>
+    <p id="wTotal" class="total"></p>
+    <div id="wGrid" class="gantt-wrap"></div>
+    <div id="wMobile" class="mshift" hidden></div>
+    <div id="wReq" class="card reqpanel"></div>
+  </section>
 
-    <div class="card-group" id="shared-fields">
-      <div class="card">
-        <div class="row" id="template-row-label">
-          <span class="row-label">テンプレート</span>
-          <select id="add-template" class="row-input"></select>
+  <section id="employee" class="panel">
+    <div class="emp">
+      <div class="emp-bar">
+        <label class="inline">従業員（仮）<select id="eWho"></select></label>
+        <div class="etabs">
+          <button type="button" class="etab active" data-etab="req">希望シフト</button>
+          <button type="button" class="etab" data-etab="rules">設定</button>
         </div>
-        <div class="row">
-          <span class="row-label">勤務先</span>
-          <select id="add-workplace" class="row-input"></select>
+      </div>
+      <p id="eNone" class="empty" hidden>スタッフがまだ登録されていません。管理者画面で登録してください。</p>
+      <div id="eBody">
+        <div id="eReq">
+          <div class="toolbar">
+            <div class="weeknav">
+              <button type="button" class="btn small" id="ePrev">‹ 前の期間</button>
+              <button type="button" class="btn small" id="eToday">今の期間</button>
+              <button type="button" class="btn small" id="eNext">次の期間 ›</button>
+              <strong id="eLabel"></strong>
+            </div>
+          </div>
+          <div id="eDeadline" class="dlbanner"></div>
+          <p class="hint">はじめは全日「出勤可能」です。下の項目を選んで日付をタップすると指定できます。同じ内容をもう一度タップすると指定が消えます。</p>
+          <div class="brushbar">
+            <button type="button" class="brush" data-brush="off">希望休</button>
+            <button type="button" class="brush" data-brush="time">時間を指定</button>
+            <button type="button" class="brush" data-brush="ok">出勤可能</button>
+            <button type="button" class="brush" data-brush="reset">指定を消す</button>
+            <span id="eTimeBox" class="timebox"><div id="eFrom"></div><span>〜</span><div id="eTo"></div></span>
+          </div>
+          <div id="eCal" class="cal"></div>
+          <div class="card submitbox">
+            <label>管理者へのコメント（任意）<textarea id="eComment" rows="4" placeholder="例：第2週は試験があるので、早めの時間だけ入れると助かります"></textarea></label>
+            <div class="actions"><button type="button" class="btn primary" id="eSubmit">提出する</button><span id="eSubStatus" class="substatus"></span></div>
+          </div>
         </div>
-        <div class="row" id="single-date-row">
-          <span class="row-label">勤務日</span>
-          <input type="date" id="add-date" class="row-input">
-        </div>
-        <div class="row">
-          <span class="row-label">出勤</span>
-          <input type="time" id="add-start" class="row-input">
-        </div>
-        <div class="row">
-          <span class="row-label">退勤</span>
-          <input type="time" id="add-end" class="row-input">
-        </div>
-        <div class="row row-last">
-          <span class="row-label">休憩時間(分)</span>
-          <div class="stepper">
-            <button type="button" data-step="-5" aria-label="5分減らす">−</button>
-            <input type="number" id="add-break" class="row-input row-input-narrow" min="0" step="5" placeholder="0" inputmode="numeric">
-            <button type="button" data-step="5" aria-label="5分増やす">＋</button>
+        <div id="eRules" hidden>
+          <div class="card">
+            <h2>いつもの希望（毎週のルール）</h2>
+            <p class="meta">日付ごとの指定がない日に、自動で当てはまります。優先順位：日付ごとの指定 ＞ 曜日の指定 ＞ 平日・休日の指定 ＞ はじめの設定（出勤可能）。「休日」は土・日のことで、祝日は含みません。</p>
+            <table class="rules">
+              <thead><tr><th>対象</th><th>希望</th><th>時間</th><th></th></tr></thead>
+              <tbody id="eRulesBody"></tbody>
+            </table>
+            <div class="actions"><button type="button" class="btn" id="eRuleAdd">ルールを追加</button></div>
           </div>
         </div>
       </div>
     </div>
+  </section>
 
-    <div id="add-result" class="result-card"></div>
+  <!-- 開発者モード（仮）：ヘッダーの「開発者」ボタンと、このセクション、script.js の「開発者モード」の項をまとめて外せます -->
+  <section id="dev" class="panel">
+    <div class="emp">
+      <p class="hint">開発・動作確認用のモードです。登録したデータは、管理者・従業員の画面でそのまま使えます。</p>
+      <p id="dInfo" class="total"></p>
 
-    <div class="bottom-pad">
-      <button id="add-save" class="btn-primary" disabled>保存する</button>
+      <div class="card">
+        <h2>ランダムでスタッフを登録</h2>
+        <p class="meta">名前・役割・評価・希望勤務時間・時給（円／ドル）・出退勤時間・予備の時間を、すべてランダムに作ります。役割は、今ある役割から選ばれます。出退勤時間は、設定タブの表示時間の範囲に収まります。</p>
+        <div class="row2">
+          <label>人数（1〜50）<input type="number" id="dCount" min="1" max="50" value="8"></label>
+          <label>登録のしかた
+            <select id="dMode"><option value="add">今のスタッフに追加する</option><option value="replace">今のスタッフをすべて入れ替える</option></select>
+          </label>
+        </div>
+        <div class="actions"><button type="button" class="btn primary" id="dRandomStaff">ランダムで登録する</button></div>
+      </div>
+
+      <div class="card">
+        <h2>ランダムな希望シフトを作る</h2>
+        <p class="meta">登録済みの全員について、今の期間の「希望休」「時間指定」「毎週のルール」「コメント」をランダムに作り、一部の人は提出済みにします。今ある希望と提出は上書きされます。</p>
+        <div class="actions"><button type="button" class="btn" id="dRandomPrefs">希望シフトをランダムに作る</button></div>
+      </div>
+
+      <div class="card">
+        <h2>画面の表示（確認用）</h2>
+        <label>レイアウト
+          <select id="dLayout"><option value="auto">自動（画面の大きさ・向きで判定）</option><option value="desktop">PC・タブレット横向き</option><option value="mobile">スマホ・タブレット縦向き</option></select>
+        </label>
+        <p class="meta">ふだんは「自動」のままで使えます。パソコンの画面でスマホ版の見た目を確かめたいときに切り替えます。</p>
+      </div>
+
+      <div class="card">
+        <h2>データの初期化</h2>
+        <p class="meta">スタッフ、シフト、希望、設定など、このアプリがブラウザに保存しているデータをすべて消して、最初の状態に戻します。</p>
+        <div class="actions"><button type="button" class="btn danger" id="dReset">すべてのデータを消す</button></div>
+      </div>
     </div>
   </section>
 
-  <!-- 勤務先一覧 -->
-  <section id="screen-workplaces" class="screen">
-    <div class="header-row">
-      <span class="header-title">勤務先</span>
-      <button id="workplace-add-btn" class="link-btn">＋ 追加</button>
-    </div>
-    <div id="workplace-list" class="list-pad"></div>
-  </section>
 
-  <!-- 日別シフト詳細モーダル -->
-  <div id="day-modal" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-title" id="day-modal-title">シフト</span>
-        <span id="day-modal-close" class="modal-close">✕</span>
+  <section id="setup" class="panel">
+    <div class="cols">
+      <div class="card">
+        <div class="card-head"><h2 id="formTitle">スタッフを登録</h2><button type="button" class="btn small" id="btnBulk">一括登録</button></div>
+        <form id="staffForm" autocomplete="off" novalidate>
+          <label>名前<input type="text" id="fName"></label>
+          <label>役割<select id="fRole"></select></label>
+          <div class="field">評価<div id="fStars" class="stars input"></div></div>
+          <div class="row2">
+            <label>希望勤務時間（時間）<input type="number" id="fHours" min="1" max="24" placeholder="例 6"></label>
+            <label>希望給料（時給）
+              <div class="wage"><input type="number" id="fWage" min="0" step="any" placeholder="例 1100">
+                <select id="fCur"><option value="JPY">円</option><option value="USD">ドル</option></select></div>
+            </label>
+          </div>
+          <div class="row2">
+            <div class="field">出勤時間<div id="fStart"></div></div>
+            <div class="field">退勤時間<div id="fEnd"></div></div>
+          </div>
+          <div class="row2">
+            <div class="field">出勤時間（予備）<div id="fStart2"></div></div>
+            <div class="field">退勤時間（予備）<div id="fEnd2"></div></div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn primary" id="fSubmit">登録する</button>
+            <button type="button" class="btn" id="fCancel" hidden>編集をやめる</button>
+          </div>
+        </form>
+        <h2 class="sub">登録済みスタッフ</h2>
+        <ul id="staffList" class="staff-list"></ul>
       </div>
-      <div id="day-modal-list"></div>
-      <button id="day-modal-add" class="btn-primary" style="margin-top:14px">＋ この日にシフトを追加</button>
-    </div>
-  </div>
 
-  <!-- 時給ルール -->
-  <section id="screen-rates" class="screen">
-    <div class="nav-bar">
-      <span class="nav-btn" id="rates-back">← 戻る</span>
-      <span class="nav-title" id="rates-title">時給ルール</span>
-      <span class="nav-btn icon-btn" id="rates-edit-workplace"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3"/><path d="M13.5 6.5l4 4"/></svg></span>
-    </div>
-    <div id="rates-content"></div>
-  </section>
-
-  <!-- 設定 -->
-  <section id="screen-settings" class="screen">
-    <div class="header-title">設定</div>
-
-    <div class="section-label">月収目標</div>
-    <div class="list-pad">
-      <div class="card pad-14">
-        <div class="goal-row">
-          <span>¥</span>
-          <input type="number" id="settings-goal" class="goal-input">
+      <div class="card">
+        <h2>自動作成の条件</h2>
+        <p class="meta">表に表示する時間（開始・終了）は、設定タブの「表の表示時間」で変えられます。</p>
+        <div class="bulk">
+          <b>一括設定</b>
+          <div class="bulk-row">
+            <select id="bFrom"></select><span>〜</span><select id="bTo"></select>
+            <label>最低<input type="number" id="bMin" min="0" max="99" value="1"></label>
+            <label>最高<input type="number" id="bMax" min="0" max="99" value="3"></label>
+            <button type="button" class="btn" id="bApply">この範囲に適用</button>
+          </div>
         </div>
+        <table class="rules">
+          <thead><tr><th>時間帯</th><th>最低人数</th><th>最高人数</th></tr></thead>
+          <tbody id="ruleBody"></tbody>
+        </table>
+        <h3 class="rr-title">役割ごとの人数（同じ時間帯に働く人数）</h3>
+        <table class="rules">
+          <thead><tr><th>役割</th><th>最低人数</th><th>最高人数</th></tr></thead>
+          <tbody id="roleRuleBody"></tbody>
+        </table>
+        <p class="meta">最高人数を空欄にすると上限なしです。役割は設定タブで追加・編集できます。</p>
+        <div class="actions"><button id="btnAuto" class="btn primary big">自動作成</button></div>
+        <p id="ruleNote" class="meta"></p>
       </div>
-    </div>
-
-    <div class="section-label">祝日設定</div>
-    <div class="tmpl-hint" style="padding:0 20px 8px">日本の祝日は自動で登録されます。不要な日は削除、会社独自の休みなどは手動で追加できます。</div>
-    <div class="list-pad">
-      <div class="card" id="holiday-list"></div>
-      <div class="holiday-add-row">
-        <input type="date" id="holiday-input">
-        <button id="holiday-add-btn" class="btn-small">追加</button>
-      </div>
-    </div>
-
-    <div class="section-label">曜日の区分</div>
-    <div class="tmpl-hint" style="padding:0 20px 8px">時給ルールの「月〜土」「日曜・祝日」をこの区分に合わせて変えられます。オンにした曜日が休日側の時給になります。</div>
-    <div class="weekday-picker" id="dow-group-picker" style="padding:0 20px 4px"></div>
-    <div class="tmpl-hint" id="dow-group-summary" style="padding:4px 20px 8px"></div>
-
-    <div class="section-label">テンプレート</div>
-    <div class="tmpl-hint" style="padding:0 20px 8px">シフト追加画面でテンプレートを選ぶと、勤務先・出勤・退勤が自動で入力されます。</div>
-    <div class="list-pad">
-      <div class="card" id="template-list"></div>
-      <button class="rate-add-btn" id="template-add-btn">＋ テンプレートを追加</button>
-    </div>
-
-    <div class="section-label">シフト追加画面のスタイル</div>
-    <div class="list-pad">
-      <div class="card" id="add-style-list"></div>
     </div>
   </section>
 
-  <!-- テンプレート編集モーダル -->
-  <div id="template-modal" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-title" id="template-modal-title">テンプレート</span>
-        <span id="tmpl-modal-close" class="modal-close">✕</span>
+  <section id="settings" class="panel">
+    <div class="cols">
+      <div class="card">
+        <h2>通貨と為替</h2>
+        <label>金額の表示通貨
+          <select id="sCur"><option value="JPY">円（JPY）</option><option value="USD">ドル（USD）</option></select>
+        </label>
+        <label class="check"><input type="checkbox" id="sAuto"> ページを開くたびに最新の為替レートを自動取得する</label>
+        <label>為替レート（1ドル＝何円か）
+          <div class="wage"><input type="number" id="sRate" min="0.01" step="0.01"><button type="button" class="btn" id="sFetch">今すぐ更新</button></div>
+        </label>
+        <p id="rateStatus" class="meta"></p>
+        <p class="meta">スタッフごとに時給を円・ドルのどちらでも入力でき、人件費は表示通貨に換算して集計します。自動取得をオフにすると、レートを手入力できます。</p>
       </div>
-      <div class="section-label small">テンプレート名</div>
-      <input type="text" id="tmpl-modal-name" class="modal-input full" placeholder="例: 平日夜シフト">
-      <div class="section-label small">勤務先</div>
-      <select id="tmpl-modal-workplace" class="modal-input full"></select>
-      <div class="two-col" style="margin-top:12px">
-        <div>
-          <div class="section-label small">出勤</div>
-          <input type="time" id="tmpl-modal-start" class="modal-input">
+      <div class="card">
+        <h2>役割の管理</h2>
+        <form id="roleForm" class="role-form" autocomplete="off">
+          <input type="text" id="rName" placeholder="役割の名前（例 レジ）" maxlength="12">
+          <input type="color" id="rColor" value="#0f6e6e" aria-label="色">
+          <button class="btn primary" type="submit" id="rSubmit">追加</button>
+          <button class="btn" type="button" id="rCancel" hidden>やめる</button>
+        </form>
+        <ul id="roleList" class="staff-list"></ul>
+      </div>
+      <div class="card">
+        <h2>表の表示時間</h2>
+        <div class="stepper-row"><span>開始時刻</span>
+          <button type="button" class="btn small" data-step="open:-1" aria-label="開始を1時間早める">−</button><b id="vOpen"></b>
+          <button type="button" class="btn small" data-step="open:1" aria-label="開始を1時間遅らせる">＋</button></div>
+        <div class="stepper-row"><span>終了時刻</span>
+          <button type="button" class="btn small" data-step="close:-1" aria-label="終了を1時間早める">−</button><b id="vClose"></b>
+          <button type="button" class="btn small" data-step="close:1" aria-label="終了を1時間遅らせる">＋</button></div>
+        <p id="rangeNote" class="meta"></p>
+        <p class="meta">例：25:00の列まで表示したいときは、終了を26:00にします。人数の設定や自動作成も、この範囲が対象です。</p>
+      </div>
+      <div class="card">
+        <h2>自動作成のルール</h2>
+        <label>ルールのタイプ<select id="aPreset"></select></label>
+        <p id="aDesc" class="meta"></p>
+        <div class="row2">
+          <label>評価の重視度<select id="aRating"></select></label>
+          <label>連続勤務の重視度<select id="aContig"></select></label>
+          <label>人件費の重視度（安い人を優先）<select id="aWage"></select></label>
+          <label>勤務時間の公平さ<select id="aFair"></select></label>
         </div>
-        <div>
-          <div class="section-label small">退勤</div>
-          <input type="time" id="tmpl-modal-end" class="modal-input">
+        <label>余裕のある時間帯の人数<select id="aFill"></select></label>
+        <label>希望勤務時間の扱い<select id="aTarget"></select></label>
+        <label>予備の出退勤時間<select id="aSub"></select></label>
+        <label>人手が足りないときの対応<select id="aFix"></select></label>
+      </div>
+      <div class="card">
+        <h2>シフトの注意ライン</h2>
+        <div class="row2">
+          <label>1日の勤務時間（時間）<input type="number" id="limDay" min="0.5" max="24" step="0.5"></label>
+          <label>1週間の勤務時間（時間）<input type="number" id="limWeek" min="0.5" max="168" step="0.5"></label>
         </div>
+        <label>連続勤務の上限（日）<input type="number" id="limStreak" min="1" max="30" step="1"></label>
+        <p class="meta">超えるとシフト管理の表に ⚠ が付き、自動作成でもこの範囲を守ります（連続勤務の上限も同様）。初期値は法定労働時間の原則（1日8時間・週40時間）です。事業所の規模や労使協定で上限が異なる場合があるため、実際の運用では厚生労働省の案内などで確認してください。</p>
       </div>
-      <button id="tmpl-modal-save" class="btn-primary" style="margin-top:16px">保存</button>
-    </div>
-  </div>
-
-  <!-- ルール編集モーダル -->
-  <div id="rate-modal" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-title">時給ルール</span>
-        <span id="modal-close" class="modal-close">✕</span>
-      </div>
-      <div class="section-label small">曜日</div>
-      <div class="segment">
-        <button class="segment-btn" id="daytype-weekday" data-value="weekday">月〜土</button>
-        <button class="segment-btn" id="daytype-holiday" data-value="holiday">日曜・祝日</button>
-      </div>
-      <div class="two-col">
-        <div>
-          <div class="section-label small">開始</div>
-          <input type="time" id="modal-start" class="modal-input">
+      <div class="card">
+        <h2>シフト表の期間</h2>
+        <label>期間の種類
+          <select id="pMode"><option value="month">月ごと（1か月）</option><option value="weeks">数週間ごと</option></select>
+        </label>
+        <div id="pMonthBox">
+          <label>月の開始日（例：16 なら 16日〜翌15日）<input type="number" id="pStart" min="1" max="28" step="1"></label>
         </div>
-        <div>
-          <div class="section-label small">終了</div>
-          <input type="time" id="modal-end" class="modal-input">
+        <div id="pWeeksBox" class="row2">
+          <label>1期間の週数<select id="pWeeks"><option value="1">1週間</option><option value="2">2週間</option><option value="3">3週間</option><option value="4">4週間</option><option value="5">5週間</option><option value="6">6週間</option></select></label>
+          <label>最初の期間の開始日<input type="date" id="pAnchor"></label>
         </div>
-      </div>
-      <div class="section-label small">時給(円)</div>
-      <input type="number" id="modal-wage" class="modal-input full">
-      <button id="modal-save" class="btn-primary" style="margin-top:16px">保存</button>
-    </div>
-  </div>
-
-  <!-- 勤務先編集モーダル -->
-  <div id="workplace-modal" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-title">勤務先を編集</span>
-        <span id="wp-modal-close" class="modal-close">✕</span>
-      </div>
-      <div class="section-label small">勤務先名</div>
-      <input type="text" id="wp-modal-name" class="modal-input full" placeholder="例: コンビニA">
-
-      <div class="section-label small">締め日</div>
-      <div class="segment daterule-segment" id="wp-modal-closing-type">
-        <button class="segment-btn" data-type="fixed">固定日</button>
-        <button class="segment-btn" data-type="endOfMonth">月末</button>
-      </div>
-      <input type="number" id="wp-modal-closing" class="modal-input full" min="1" max="31" style="margin-top:8px">
-
-      <div class="section-label small">給料日</div>
-      <div class="segment daterule-segment" id="wp-modal-payday-type">
-        <button class="segment-btn" data-type="fixed">固定日</button>
-        <button class="segment-btn" data-type="endOfMonth">月末</button>
-        <button class="segment-btn" data-type="lastWeekday">月末最後の平日</button>
-      </div>
-      <input type="number" id="wp-modal-payday" class="modal-input full" min="1" max="31" style="margin-top:8px">
-
-      <button id="wp-modal-save" class="btn-primary" style="margin-top:16px">保存</button>
-      <button id="wp-modal-delete" class="btn-delete-wide">この勤務先を削除</button>
-    </div>
-  </div>
-
-  <!-- 確認・通知モーダル(ネイティブconfirm/alertの代わり) -->
-  <div id="confirm-modal" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-title" id="confirm-modal-title">確認</span>
-      </div>
-      <div id="confirm-modal-message" class="confirm-message"></div>
-      <div class="confirm-btn-row">
-        <button id="confirm-modal-cancel" class="btn-confirm-cancel">キャンセル</button>
-        <button id="confirm-modal-ok" class="btn-primary btn-danger">OK</button>
+        <label>締切の初期値（期間の開始日の何日前。0なら設定しない）<input type="number" id="pDlDays" min="0" max="60" step="1"></label>
+        <p id="pNote" class="meta"></p>
+        <p class="meta">管理者のシフト表と、従業員の希望提出は、この期間ごとに区切られます。</p>
       </div>
     </div>
+  </section>
+</main>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<div id="modal" class="modal" hidden>
+  <div class="dialog" role="dialog" aria-modal="true">
+    <p id="modalMsg"></p>
+    <div class="actions">
+      <button id="modalCancel" class="btn">キャンセル</button>
+      <button id="modalOk" class="btn primary">OK</button>
+    </div>
   </div>
+</div>
 
-  <!-- タブバー -->
-  <nav class="tabbar">
-    <button class="tab-item" data-tab="home">
-      <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="tab-label">ホーム</span>
-    </button>
-    <button class="tab-item" data-tab="history">
-      <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span><span class="tab-label">履歴</span>
-    </button>
-    <button class="tab-item tab-item-center" data-tab="add">
-      <span class="tab-center-circle"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="tab-center-label">シフト追加</span></span>
-    </button>
-    <button class="tab-item" data-tab="workplaces">
-      <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M10 8h1M13 8h1M10 12h1M13 12h1M10 16h4"/></svg></span><span class="tab-label">勤務先</span>
-    </button>
-    <button class="tab-item" data-tab="settings">
-      <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span><span class="tab-label">設定</span>
-    </button>
-  </nav>
+<div id="shiftModal" class="modal" hidden>
+  <div class="dialog pop" role="dialog" aria-modal="true" aria-labelledby="sTitle">
+    <h2 id="sTitle"></h2>
+    <p id="sHint" class="meta"></p>
+    <p id="sPref" class="meta"></p>
+    <div class="row2">
+      <div class="field">出勤<div id="sStart"></div></div>
+      <div class="field">退勤<div id="sEnd"></div></div>
+    </div>
+    <div class="shift-quick">
+      <button type="button" class="btn small" id="sFillMain">通常の時間を入れる</button>
+      <button type="button" class="btn small" id="sFillSub" hidden>予備の時間を入れる</button>
+    </div>
+    <label>休憩
+      <select id="sBreak"><option value="0">なし</option><option value="30">30分</option><option value="45">45分</option><option value="60">60分</option><option value="90">90分</option></select>
+    </label>
+    <p id="sInfo" class="meta"></p>
+    <p class="meta">休憩の目安：法定の最低は、6時間を超えると45分、8時間を超えると60分です。</p>
+    <div class="actions">
+      <button type="button" class="btn" id="sUnset">未設定に戻す</button>
+      <button type="button" class="btn push-left" id="sDelete">休みにする</button>
+      <button type="button" class="btn" id="sCancel">キャンセル</button>
+      <button type="button" class="btn primary" id="sSave">保存</button>
+    </div>
+  </div>
+</div>
 
+<div id="bulkModal" class="modal" hidden>
+  <div class="dialog wide" role="dialog" aria-modal="true" aria-labelledby="bulkTitle">
+    <h2 id="bulkTitle">スタッフを一括登録</h2>
+    <p class="meta">Excel やスプレッドシートからコピーして貼り付けるか、CSV ファイルを選んでください。1行に1人で、列は次の順です。同じ名前のスタッフは上書きされます。</p>
+    <code>名前, 役割, 評価(1〜5), 希望勤務時間, 希望給料, 出勤, 退勤, 予備出勤, 予備退勤</code>
+    <p class="meta">希望給料は「1100」「$15」「15ドル」のように書けます（数字だけなら円）。時刻は「9:00」「0900」など。役割以降は空欄でも構いません。</p>
+    <textarea id="bulkText" rows="9" spellcheck="false" placeholder="田中太郎,レジ,4,6,1100,9:00,15:00,15:00,18:00"></textarea>
+    <div class="bulk-tools">
+      <input type="file" id="bulkFile" accept=".csv,.tsv,.txt">
+      <button type="button" class="btn small" id="bulkSample">入力例を入れる</button>
+      <label class="check"><input type="checkbox" id="bulkRoles" checked> 登録されていない役割を自動で追加する</label>
+    </div>
+    <p id="bulkResult" class="msg"></p>
+    <div class="actions"><button type="button" class="btn" id="bulkCancel">閉じる</button><button type="button" class="btn primary" id="bulkImport">取り込む</button></div>
+  </div>
 </div>
 
 <script src="script.js"></script>
