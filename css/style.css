@@ -360,7 +360,9 @@ select.row-input {
 .stepper .row-input { width: 64px; max-width: none; padding: 0 4px; }
 
 /* modals: start/end no longer collide */
-.modal { max-height: 90vh; overflow-y: auto; }
+/* 高さは「画面の90%」ではなく「いま見えている範囲(ポップアップの外枠)から上下16pxを引いた分」にする。
+   iPhoneのSafariは、ツールバーが出ていると見える高さが小さくなり、90vhだと上下がはみ出して見えなくなるため */
+.modal { max-height: calc(100% - 32px); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .modal-input { width: 100%; height: 44px; display: block; }
 .modal-input[type="time"], .modal-input[type="number"] { text-align: center; }
 .modal-input[type="text"] { text-align: left; }
