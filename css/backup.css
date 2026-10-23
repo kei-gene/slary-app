@@ -1,0 +1,70 @@
+/* ---- バックアップ / 免責表示 (v3: 強調表示つき) ---- */
+.backup-status { font-size: 13px; color: #636366; margin-bottom: 10px; }
+.backup-status.backup-stale { color: #B45309; font-weight: 600; }
+.backup-sub-row { display: flex; gap: 8px; margin-top: 10px; }
+.backup-sub-btn { height: 42px; font-size: 14px; }
+.backup-paste-toggle { font-size: 12px; color: #007AFF; margin-top: 12px; cursor: pointer; text-align: center; }
+.backup-textarea {
+  width: 100%; height: 90px; margin: 10px 0 8px; padding: 10px; border: none; border-radius: 10px;
+  background: #F2F2F7; font-size: 13px; font-family: inherit; resize: vertical; outline: none;
+}
+
+/* 免責事項: 番号 + 見出し + 本文 (設定画面・初回モーダル共通) */
+.disc-item { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-bottom: 0.5px solid #E5E5EA; }
+.disc-item:last-child { border-bottom: none; }
+.disc-num {
+  flex-shrink: 0; width: 24px; height: 24px; border-radius: 12px; margin-top: 1px;
+  background: #EAF2FF; color: #007AFF; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.disc-main { flex: 1; min-width: 0; }
+.disc-title { font-size: 15px; font-weight: 700; color: #1C1C1E; line-height: 1.5; }
+.disc-text {
+  font-size: 14px; color: #48484A; line-height: 1.85; margin-top: 4px;
+  text-align: left; line-break: strict; word-break: auto-phrase; overflow-wrap: anywhere;
+}
+.disclaimer-card { padding: 2px 16px; }
+
+/* 強調: **文字** = 黄色マーカー / !!文字!! = 赤字 */
+.disc-em {
+  background: linear-gradient(transparent 55%, #FFE066 55%);
+  color: #1C1C1E; font-weight: 700; padding: 0 1px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone; /* 2行にまたがっても線が切れない */
+}
+.disc-warn { color: #D70015; font-weight: 700; }
+
+/* 重要な項目: オレンジの太線 + うすい背景で枠つきに */
+.disc-item-important {
+  background: #FFF6E8; border-left: 4px solid #FF9500; border-bottom: none;
+  border-radius: 10px; padding: 14px 12px; margin: 6px 0;
+}
+.disc-item-important .disc-num { background: #FF9500; color: #fff; }
+.disc-item-important .disc-title { color: #8A4B00; }
+.disc-item-important .disc-text { color: #3A3A3C; }
+
+/* 初回の同意モーダル: ボタンを常に見える位置に固定し、本文だけスクロール */
+.modal.disclaimer-modal {
+  width: 92%; max-width: 560px; max-height: 88vh; max-height: 88dvh;
+  display: flex; flex-direction: column; overflow: hidden;
+  padding: 22px 20px max(20px, env(safe-area-inset-bottom));
+}
+.disc-modal-head { flex-shrink: 0; }
+.disc-modal-title { font-size: 19px; font-weight: 700; }
+.disc-modal-intro { font-size: 13px; color: #636366; line-height: 1.7; margin: 6px 0 4px; }
+.disc-modal-body {
+  flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  border-top: 0.5px solid #E5E5EA; border-bottom: 0.5px solid #E5E5EA; padding: 0 2px; margin-top: 8px;
+}
+.disc-modal-btn { flex-shrink: 0; margin-top: 16px; }
+
+/* PC・タブレットでは少し大きく、余白を広めに */
+@media (min-width: 600px) {
+  .modal.disclaimer-modal { padding: 28px 30px 26px; max-width: 600px; }
+  .disc-modal-title { font-size: 22px; }
+  .disc-modal-intro { font-size: 14px; }
+  .disc-item { gap: 14px; padding: 18px 0; }
+  .disc-item-important { padding: 18px 16px; margin: 8px 0; }
+  .disc-title { font-size: 16px; }
+  .disc-text { font-size: 15px; }
+  .disclaimer-card { padding: 4px 22px; }
+}

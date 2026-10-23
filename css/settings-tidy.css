@@ -1,0 +1,19 @@
+/* ---- 設定タブの整理 ---- */
+.st-spacer { height: 14px; }
+.st-fold { margin-top: 10px; }
+.st-fold-head {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 14px 16px; border: none; border-radius: 14px; background: #fff; cursor: pointer;
+  font-family: inherit; text-align: left; color: #1C1C1E; -webkit-tap-highlight-color: transparent;
+}
+.st-fold-head:active { background: #F2F2F7; }
+.st-fold-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.st-fold-title { font-size: 15px; font-weight: 700; }
+.st-fold-sub { font-size: 12px; color: #8E8E93; line-height: 1.5; }
+.st-fold-body { padding-bottom: 8px; }
+.st-fold-body .section-label:first-child { padding-top: 20px; }
+
+@media (min-width: 600px) {
+  .st-fold-title { font-size: 16px; }
+  .st-fold-sub { font-size: 13px; }
+}

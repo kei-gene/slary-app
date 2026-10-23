@@ -1,0 +1,13 @@
+/* ---- 割増計算(premium.js 用) ---- */
+
+/* 勤務先の編集画面: 割増スイッチ */
+.prem-row {
+  display: flex; align-items: center; gap: 10px; padding: 11px 12px; margin-bottom: 8px;
+  background: #F2F2F7; border-radius: 10px; font-size: 14px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.prem-row input { width: 20px; height: 20px; accent-color: #007AFF; flex-shrink: 0; }
+.prem-hint { font-size: 12px; color: #8E8E93; line-height: 1.6; margin-bottom: 4px; }
+
+/* シフト追加画面: 割増分の内訳 */
+.result-premium { margin-top: 8px; font-size: 12px; color: #1A7A3E; font-weight: 600; }
