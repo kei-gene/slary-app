@@ -51,15 +51,13 @@
     wrap.className = "st-fold";
     wrap.id = id;
     wrap.innerHTML = `
-      <div class="list-pad">
-        <button type="button" class="st-fold-head" aria-expanded="false">
-          <span class="st-fold-text">
-            <span class="st-fold-title">${title}</span>
-            ${sub ? `<span class="st-fold-sub">${sub}</span>` : ""}
-          </span>
-          <span class="chevron-icon">${ICON_CHEVRON_DOWN}</span>
-        </button>
-      </div>
+      <button type="button" class="st-fold-head" aria-expanded="false">
+        <span class="st-fold-text">
+          <span class="st-fold-title">${title}</span>
+          ${sub ? `<span class="st-fold-sub">${sub}</span>` : ""}
+        </span>
+        <span class="chevron-icon">${ICON_CHEVRON_DOWN}</span>
+      </button>
       <div class="st-fold-body hidden"></div>
     `;
     const body = wrap.querySelector(".st-fold-body");
@@ -68,6 +66,7 @@
     head.onclick = () => {
       const open = body.classList.toggle("hidden") === false;
       head.setAttribute("aria-expanded", String(open));
+      wrap.classList.toggle("is-open", open); // 開いている間は、見出しと中身を1つの枠にまとめて見せる
       wrap.querySelector(".chevron-icon").classList.toggle("open", open);
     };
     return wrap;

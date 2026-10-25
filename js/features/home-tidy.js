@@ -78,7 +78,7 @@
             <div class="hm-payout-date">${fmtDateObj(x.payout.payday)}</div>
             <div class="hm-payout-wp">${escapeHtml(x.wp.name)}</div>
           </div>
-          <div class="hm-payout-amt">${yen(x.amount)}</div>
+          <div class="hm-payout-amt">${yenBig(x.amount)}</div>
         </div>
         ${hmPayoutOpen ? `<div class="hm-payout-period">対象期間: ${fmtDateObj(x.payout.periodStart)}〜${fmtDateObj(x.payout.periodEnd)}</div>` : ""}
       </div>
@@ -137,8 +137,8 @@
       <div class="hm-main">
         <div class="hm-card">
           <div class="hm-label">${label}の予想給与</div>
-          <div class="hm-amount">${yen(sum.pay)}</div>
-          <div class="hm-meta">${(sum.minutes / 60).toFixed(1)}時間 ・ ${sum.days}日${hasMultiWp ? ` ・ <button type="button" class="hm-toggle hm-toggle-inline" id="hm-bd-toggle">内訳${hmBreakdown ? "を閉じる" : ""}</button>` : ""}</div>
+          <div class="hm-amount">${yenBig(sum.pay)}</div>
+          <div class="hm-meta">${numUnit((sum.minutes / 60).toFixed(1), "時間")} ・ ${numUnit(sum.days, "日")}${hasMultiWp ? ` ・ <button type="button" class="hm-toggle hm-toggle-inline" id="hm-bd-toggle">内訳${hmBreakdown ? "を閉じる" : ""}</button>` : ""}</div>
           ${breakdownHtml}
           ${goalHtml}
           ${emptyHtml}

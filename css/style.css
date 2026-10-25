@@ -2,7 +2,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
-  background: #F2F2F7;
+  background: var(--page-bg);
   color: #1C1C1E;
   display: flex;
   justify-content: center;
@@ -12,7 +12,7 @@ body {
   width: 100%;
   max-width: 480px;
   min-height: 100vh;
-  background: #F2F2F7;
+  background: var(--page-bg);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -27,7 +27,7 @@ body {
 .section-label { font-size: 12px; color: #8E8E93; text-transform: uppercase; letter-spacing: .3px; padding: 16px 20px 6px; }
 .section-label.small { padding: 0 0 6px; margin-top: 12px; }
 .list-pad { padding: 0 20px; }
-.link-btn { border: none; background: none; color: #007AFF; font-size: 15px; font-weight: 500; cursor: pointer; }
+.link-btn { border: none; background: none; color: var(--brand-dark); font-size: 15px; font-weight: 500; cursor: pointer; }
 
 .card { background: #fff; border-radius: 14px; overflow: hidden; }
 .card-group { padding: 8px 20px 0; }
@@ -49,7 +49,7 @@ body {
   display: flex; justify-content: space-between; align-items: center;
   padding: 16px 20px 12px; border-bottom: 0.5px solid #E5E5EA;
 }
-.nav-btn { font-size: 15px; color: #007AFF; cursor: pointer; }
+.nav-btn { font-size: 15px; color: var(--brand-dark); cursor: pointer; }
 .nav-title { font-size: 16px; font-weight: 600; }
 .nav-btn-placeholder { width: 56px; }
 
@@ -66,7 +66,7 @@ body {
 
 .btn-primary {
   width: 100%; height: 50px; border-radius: 14px; border: none;
-  background: #007AFF; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
+  background: var(--brand); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
   font-family: inherit;
 }
 .btn-primary:disabled { background: #C7C7CC; cursor: default; }
@@ -87,13 +87,13 @@ body {
 .month-segment .segment-btn { height: 32px; font-size: 12px; padding: 0 14px; flex: none; }
 .home-amount-label { font-size: 13px; color: #636366; margin-bottom: 4px; }
 .home-amount { font-size: 42px; font-weight: 700; line-height: 1.1; }
-.home-breakdown-toggle { font-size: 12px; color: #007AFF; margin-top: 4px; cursor: pointer; }
+.home-breakdown-toggle { font-size: 12px; color: var(--brand-dark); margin-top: 4px; cursor: pointer; }
 .home-block { padding: 0 20px 16px; }
 .home-block-first { padding: 0 20px 8px; }
 .goal-card { background: #F2F2F7; border-radius: 14px; padding: 12px 16px; }
 .goal-top { display: flex; justify-content: space-between; font-size: 12px; color: #636366; margin-bottom: 6px; }
 .goal-bar { height: 6px; border-radius: 3px; background: #E5E5EA; overflow: hidden; }
-.goal-bar-fill { height: 100%; background: #34C759; }
+.goal-bar-fill { height: 100%; background: var(--brand); }
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 20px; }
 .stat-card { background: #F2F2F7; border-radius: 14px; padding: 12px; }
 .stat-label { font-size: 12px; color: #636366; }
@@ -103,7 +103,7 @@ body {
 .payout-card { background: #F2F2F7; border-radius: 14px; padding: 14px 16px; }
 .payout-top { display: flex; justify-content: space-between; align-items: baseline; }
 .payout-workplace { font-size: 14px; font-weight: 600; }
-.payout-date { font-size: 12px; color: #007AFF; font-weight: 600; }
+.payout-date { font-size: 12px; color: var(--brand-dark); font-weight: 600; }
 .payout-period { font-size: 11px; color: #8E8E93; margin-top: 3px; }
 .payout-amount { font-size: 22px; font-weight: 700; margin-top: 6px; }
 .breakdown-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid #E5E5EA; font-size: 14px; }
@@ -144,7 +144,7 @@ body {
 .rate-empty { padding: 14px 16px; color: #8E8E93; font-size: 13px; }
 .rate-add-btn {
   width: calc(100% - 40px); margin: 16px 20px; height: 44px; border-radius: 12px;
-  border: 1px dashed #C7C7CC; background: transparent; color: #007AFF; font-size: 14px; cursor: pointer;
+  border: 1px dashed #C7C7CC; background: transparent; color: var(--brand-dark); font-size: 14px; cursor: pointer;
   font-family: inherit;
 }
 
@@ -180,7 +180,7 @@ body {
 .daterule-segment .segment-btn { font-size: 11px; padding: 0 2px; height: 32px; }
 .holiday-add-row { display: flex; gap: 8px; margin-top: 10px; }
 .holiday-add-row input { flex: 1; height: 40px; border-radius: 10px; border: 0.5px solid #D1D1D6; padding: 0 10px; font-size: 14px; font-family: inherit; }
-.btn-small { width: 60px; border-radius: 10px; border: none; background: #007AFF; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-small { width: 60px; border-radius: 10px; border: none; background: var(--brand); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
 /* ---- modal ---- */
 .modal-overlay {
@@ -197,7 +197,7 @@ body {
   flex: 1; height: 36px; border-radius: 10px; border: 0.5px solid #D1D1D6; background: #fff;
   color: #3A3A3C; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
 }
-.segment-btn.active { border: 1.5px solid #007AFF; background: #EAF2FF; color: #007AFF; }
+.segment-btn.active { border: 1.5px solid var(--brand); background: var(--brand-tint); color: var(--brand-dark); }
 .two-col { display: flex; gap: 10px; margin-bottom: 12px; }
 .two-col > div { flex: 1; }
 .modal-input { width: 100%; height: 36px; border-radius: 10px; border: 0.5px solid #D1D1D6; padding: 0 10px; font-size: 14px; font-family: inherit; }
@@ -234,7 +234,7 @@ body {
   flex: 1; min-width: 36px; height: 36px; border-radius: 10px; border: 0.5px solid #D1D1D6;
   background: #fff; font-size: 13px; font-weight: 600; color: #3A3A3C; cursor: pointer; font-family: inherit;
 }
-.weekday-btn.active { border: 1.5px solid #007AFF; background: #EAF2FF; color: #007AFF; }
+.weekday-btn.active { border: 1.5px solid var(--brand); background: var(--brand-tint); color: var(--brand-dark); }
 
 /* ---- calendar ---- */
 .calendar-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 12px; }
@@ -249,9 +249,9 @@ body {
 .calendar-cell.empty { background: transparent; cursor: default; }
 .calendar-cell.sat { background: rgba(0, 122, 255, 0.12); }
 .calendar-cell.sun-holiday { background: rgba(255, 59, 48, 0.12); }
-.calendar-cell.selected { background: #007AFF; }
+.calendar-cell.selected { background: var(--brand); }
 .calendar-cell.selected .cal-day-num { color: #fff; }
-.calendar-cell.today { box-shadow: inset 0 0 0 1.5px #007AFF; }
+.calendar-cell.today { box-shadow: inset 0 0 0 1.5px var(--brand); }
 .cal-day-num { font-size: 12px; font-weight: 600; color: #1C1C1E; line-height: 1; }
 .cal-day-pay { font-size: 9px; color: #1A7A3E; margin-top: auto; font-weight: 600; line-height: 1.3; min-height: 9px; }
 .cal-day-hours { font-size: 8px; color: #8E8E93; padding-bottom: 5px; font-weight: 500; line-height: 1.3; min-height: 8px; }
@@ -270,7 +270,7 @@ body {
   color: #1C1C1E; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit;
 }
 .confirm-btn-row.ok-only .btn-confirm-cancel { display: none; }
-.confirm-btn-row.ok-only .btn-primary { background: #007AFF; }
+.confirm-btn-row.ok-only .btn-primary { background: var(--brand); }
 
 /* ---- tab bar ---- */
 .tabbar {
@@ -281,9 +281,9 @@ body {
 .tab-item { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-family: inherit; }
 .tab-icon { display: flex; color: #8E8E93; }
 .tab-svg { width: 24px; height: 24px; }
-.tab-item.active .tab-icon { color: #007AFF; }
+.tab-item.active .tab-icon { color: var(--brand-dark); }
 .tab-label { font-size: 10px; color: #8E8E93; margin-top: 2px; }
-.tab-item.active .tab-label { color: #007AFF; font-weight: 600; }
+.tab-item.active .tab-label { color: var(--brand-dark); font-weight: 600; }
 .tab-item-center { position: relative; top: -14px; }
 /* ---- tab bar motion ---- */
 .tab-item { -webkit-tap-highlight-color: transparent; }
@@ -297,15 +297,15 @@ body {
   100% { transform: scale(1) translateY(0); }
 }
 .tab-center-circle { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-.tab-item-center:active .tab-center-circle { transform: scale(0.9) rotate(90deg); box-shadow: 0 1px 3px rgba(0,122,255,0.25); }
+.tab-item-center:active .tab-center-circle { transform: scale(0.9) rotate(90deg); box-shadow: 0 1px 3px var(--brand-shadow); }
 @media (prefers-reduced-motion: reduce) {
   .tab-icon, .tab-label, .tab-center-circle { transition: none; animation: none !important; }
 }
 
 .tab-center-circle {
-  width: 46px; height: 46px; border-radius: 23px; background: #007AFF; color: #fff;
+  width: 46px; height: 46px; border-radius: 23px; background: var(--brand); color: #fff;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,122,255,0.3);
+  box-shadow: 0 2px 6px var(--brand-shadow);
 }
 
 
@@ -333,7 +333,7 @@ input[type="date"].row-input { min-width: 128px; }
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 .row-input:focus, .modal-input:focus, .holiday-add-row input:focus {
-  background-color: #EAF2FF; box-shadow: inset 0 0 0 1.5px #007AFF;
+  background-color: var(--brand-tint); box-shadow: inset 0 0 0 1.5px var(--brand);
 }
 
 /* rows on the add screen */
@@ -352,7 +352,7 @@ select.row-input {
 /* stepper for break minutes */
 .stepper { display: flex; align-items: center; gap: 8px; }
 .stepper button {
-  width: 40px; height: 40px; border-radius: 50%; border: none; background: #F2F2F7; color: #007AFF;
+  width: 40px; height: 40px; border-radius: 50%; border: none; background: #F2F2F7; color: var(--brand-dark);
   font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; touch-action: manipulation;
   display: flex; align-items: center; justify-content: center; padding: 0;
 }
@@ -423,7 +423,7 @@ body { padding-top: env(safe-area-inset-top); }
 
 /* ---------- PC ---------- */
 @media (min-width: 1024px) {
-  body { background: #F2F2F7; }
+  body { background: var(--page-bg); }
 
   /* sidebar (the tab bar turns vertical) */
   .tabbar {
@@ -434,7 +434,7 @@ body { padding-top: env(safe-area-inset-top); }
     border-top: none; border-right: 0.5px solid #E5E5EA;
   }
   .tabbar::before {
-    content: "はたログ"; order: -2;
+    content: "時給・給与管理"; order: -2;
     font-size: 17px; font-weight: 700; padding: 0 12px 20px; color: #1C1C1E;
   }
   .tab-item {
@@ -443,7 +443,7 @@ body { padding-top: env(safe-area-inset-top); }
     transition: background 0.15s ease;
   }
   .tab-item:hover { background: #F2F2F7; }
-  .tab-item.active { background: #EAF2FF; }
+  .tab-item.active { background: var(--brand-tint); }
   .tab-svg { width: 22px; height: 22px; }
   .tab-label { font-size: 14px; margin-top: 0; }
   .tab-item.active .tab-label { font-weight: 600; }

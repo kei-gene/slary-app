@@ -209,7 +209,7 @@
   function foldHtml(key, title, sub, bodyHtml) {
     const open = foldOpen[key];
     return `
-      <div class="wall-fold">
+      <div class="wall-fold${open ? " is-open" : ""}">
         <button type="button" class="wall-fold-head" data-wallfold="${key}" aria-expanded="${open}">
           <span class="wall-fold-text">
             <span class="wall-fold-title">${title}</span>
@@ -269,14 +269,14 @@
       <div class="wall-card">
         <div class="wall-sub">${year}年 ・ ${isPayday ? "給料日ベース" : "勤務日ベース"} ・ ${cfg.profile === "student" ? "学生(19〜22歳)" : "学生以外"}</div>
         <div class="wall-income-label">${year}年の収入(見込み)</div>
-        <div class="wall-income">${yen(a.total)}</div>
+        <div class="wall-income">${yenBig(a.total)}</div>
         <div class="wall-income-sub">${isPayday ? "支払い済み" : "勤務済み"} ${yen(a.paid)} ／ これから ${yen(a.upcoming)}</div>
         ${forecastHtml}
       </div>
 
       ${wallsSectionHtml(a, walls, today, cfg)}
 
-      ${foldHtml("chart", "月ごとの収入グラフ", `${isPayday ? "給料が支払われる月" : "勤務した月"}で集計(万円)`, chartHtml(a, year, today))}
+      ${foldHtml("chart", "月ごとの収入グラフ", `${isPayday ? "給料が支払われる月" : "勤務した月"}で集計(万円)`, `<div class="wall-fold-card">${chartHtml(a, year, today)}</div>`)}
 
       <div class="wall-foot">※ 目安です。税金や扶養の判定は、勤務先・学校・保険者などで確認してください。</div>
     `;
@@ -344,6 +344,7 @@
   function wireSettings() {
     document.getElementById("wall-set-toggle").onclick = () => {
       const open = document.getElementById("wall-set-body").classList.toggle("hidden") === false;
+      document.querySelector(".wall-fold-settings").classList.toggle("is-open", open);
       document.getElementById("wall-set-toggle").setAttribute("aria-expanded", String(open));
       document.getElementById("wall-set-chev").classList.toggle("open", open);
     };

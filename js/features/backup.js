@@ -234,6 +234,7 @@
     overlay.innerHTML = `
       <div class="modal disclaimer-modal" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
         <div class="disc-modal-head">
+          <img class="disc-modal-logo" src="img/icon-96.png" alt="" width="52" height="52">
           <div class="disc-modal-title" id="disclaimer-title">ご利用にあたって</div>
           ${d.intro ? `<p class="disc-modal-intro">${rich(d.intro)}</p>` : ""}
         </div>

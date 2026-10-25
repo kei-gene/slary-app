@@ -3,7 +3,7 @@
 .wall-note-wrap { padding: 0 20px 12px; }
 .wall-note {
   background: #fff; border-radius: 12px; padding: 10px 14px 9px; cursor: pointer;
-  border-left: 3px solid #34C759; -webkit-tap-highlight-color: transparent;
+  border-left: 3px solid var(--brand); -webkit-tap-highlight-color: transparent;
   transition: background-color 0.12s ease;
 }
 .wall-note:active { background: #F2F2F7; }
@@ -13,7 +13,7 @@
 .wall-note-text b { font-weight: 700; color: #1C1C1E; }
 .wall-note-chev { color: #C7C7CC; font-size: 16px; flex-shrink: 0; }
 .wall-note-bar { height: 3px; border-radius: 2px; background: #E5E5EA; overflow: hidden; margin-top: 6px; }
-.wall-note-bar-fill { height: 100%; background: #34C759; }
+.wall-note-bar-fill { height: 100%; background: var(--brand); }
 .wall-note-warn { border-left-color: #FF9500; background: #FFF8EC; }
 .wall-note-warn .wall-note-bar-fill { background: #FF9500; }
 .wall-note-over { border-left-color: #FF3B30; background: #FFF1F0; }
@@ -28,7 +28,7 @@
 .wall-income-label { font-size: 12px; color: #636366; margin-top: 10px; }
 .wall-income { font-size: 30px; font-weight: 700; line-height: 1.2; }
 .wall-income-sub { font-size: 12px; color: #8E8E93; margin-top: 2px; }
-.wall-forecast { margin-top: 12px; padding: 10px 12px; background: #F2F8FF; border-radius: 12px; font-size: 13px; line-height: 1.7; color: #3A3A3C; }
+.wall-forecast { margin-top: 12px; padding: 10px 12px; background: var(--brand-tint-2); border-radius: 12px; font-size: 13px; line-height: 1.7; color: #3A3A3C; }
 .wall-forecast b { font-size: 15px; }
 .wall-forecast-sub { display: block; font-size: 11px; color: #8E8E93; }
 .wall-forecast-warn { margin-top: 4px; font-size: 12px; font-weight: 600; color: #B45309; }
@@ -40,7 +40,7 @@
 .wall-name { font-size: 13px; font-weight: 600; min-width: 0; }
 .wall-amount { font-size: 13px; font-weight: 700; color: #3A3A3C; white-space: nowrap; }
 .wall-bar { height: 6px; border-radius: 3px; background: #E5E5EA; overflow: hidden; margin: 8px 0 6px; }
-.wall-bar-fill { height: 100%; border-radius: 3px; background: #34C759; }
+.wall-bar-fill { height: 100%; border-radius: 3px; background: var(--brand); }
 .wall-msg { font-size: 12px; color: #636366; line-height: 1.6; }
 
 .wall-warn .wall-bar-fill { background: #FF9500; }
@@ -50,7 +50,7 @@
 .wall-over .wall-msg { color: #D70015; font-weight: 600; }
 
 /* いちばん近い(まだ超えていない)壁は、枠で目立たせる */
-.wall-next { box-shadow: inset 0 0 0 1.5px #007AFF; background: #F2F8FF; }
+.wall-next { box-shadow: inset 0 0 0 1.5px var(--brand); background: var(--brand-tint-2); }
 .wall-next.wall-warn { box-shadow: inset 0 0 0 1.5px #FF9500; background: #FFF8EC; }
 
 /* 月ごとの収入グラフ */
@@ -58,11 +58,11 @@
 .wc-col { display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .wc-val { font-size: 9px; color: #8E8E93; height: 12px; line-height: 12px; white-space: nowrap; }
 .wc-bar-wrap { width: 100%; height: 110px; display: flex; align-items: flex-end; justify-content: center; }
-.wc-bar { width: 70%; background: #007AFF; border-radius: 4px 4px 0 0; }
-.wc-future .wc-bar { background: #9CC4FF; }
+.wc-bar { width: 70%; background: var(--brand); border-radius: 4px 4px 0 0; }
+.wc-future .wc-bar { background: var(--brand-light); }
 .wc-zero .wc-bar { background: #E5E5EA; }
 .wc-m { font-size: 11px; color: #8E8E93; margin-top: 4px; }
-.wc-now .wc-m { color: #007AFF; font-weight: 700; }
+.wc-now .wc-m { color: var(--brand-dark); font-weight: 700; }
 
 /* 壁の設定 */
 .wall-set-label { font-size: 12px; color: #8E8E93; margin: 4px 0 6px; }
@@ -72,7 +72,7 @@
 .wall-set-row:last-child { border-bottom: none; }
 .wall-set-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .wall-set-check { display: flex; align-items: center; gap: 10px; min-width: 0; cursor: pointer; }
-.wall-set-check input { width: 20px; height: 20px; accent-color: #007AFF; flex-shrink: 0; }
+.wall-set-check input { width: 20px; height: 20px; accent-color: var(--brand); flex-shrink: 0; }
 .wall-set-name { font-size: 14px; font-weight: 600; line-height: 1.4; }
 .wall-set-amount { display: flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: 13px; color: #636366; }
 .wall-set-amount input {
@@ -80,7 +80,7 @@
   text-align: center; font-size: 16px; font-weight: 600; font-family: inherit; outline: none;
   -webkit-appearance: none; appearance: none; -moz-appearance: textfield;
 }
-.wall-set-amount input:focus { background: #EAF2FF; box-shadow: inset 0 0 0 1.5px #007AFF; }
+.wall-set-amount input:focus { background: var(--brand-tint); box-shadow: inset 0 0 0 1.5px var(--brand); }
 .wall-set-row .wall-set-hint { margin-top: 6px; padding-left: 30px; }
 .wall-add-row { display: flex; gap: 8px; margin-top: 12px; }
 .wall-add-row .modal-input { flex: 1; min-width: 0; }
@@ -115,7 +115,6 @@
 
 /* たたむ・開く(ほかの壁 / グラフ / 壁の設定) */
 .wall-fold { margin-bottom: 12px; }
-.wall-fold-settings { padding: 0 20px; }
 .wall-fold-head {
   width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
   padding: 14px 16px; border: none; border-radius: 14px; background: #fff; cursor: pointer;
@@ -125,8 +124,7 @@
 .wall-fold-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .wall-fold-title { font-size: 14px; font-weight: 700; }
 .wall-fold-sub { font-size: 12px; color: #8E8E93; line-height: 1.5; }
-.wall-fold-body { padding-top: 10px; }
-.wall-fold-settings .wall-fold-body { padding-top: 0; margin: 0 -20px; }
+.wall-fold-body { padding-top: 0; }
 .wall-fold-body .wc-chart { margin-top: 4px; }
 .wall-fold-body > .wall-rows { background: #fff; border-radius: 14px; padding: 10px; }
 @media (min-width: 600px) {
@@ -136,3 +134,20 @@
 
 /* いちばん近い壁は、PCでも1つだけ横いっぱいに */
 .wall-rows.wall-rows-one { grid-template-columns: minmax(0, 1fr) !important; }
+
+/* ---- 開いたとき、見出しと中身を1つの枠にまとめる ---- */
+.wall-fold.is-open { background: var(--brand-tint); box-shadow: inset 0 0 0 1.5px var(--brand-border); border-radius: 16px; padding-bottom: 10px; }
+.wall-fold.is-open .wall-fold-head { background: transparent; }
+.wall-fold.is-open .wall-fold-title { color: var(--brand-dark); }
+.wall-fold.is-open .chevron-icon { color: var(--brand-dark); }
+.wall-fold-body { padding: 0 10px; }
+.wall-fold-card { background: #fff; border-radius: 14px; padding: 10px 12px 12px; }
+.wall-fold-body > .wall-rows { padding: 10px; }
+
+/* 壁の設定(外側の余白は他の項目と同じ20px。中は少し狭く) */
+.wall-fold-settings { margin: 0 20px 12px; padding: 0; }
+.wall-fold-settings .wall-fold-body { margin: 0; padding: 0; }
+.wall-fold-settings .wall-fold-body .list-pad { padding: 0 10px; }
+.wall-fold-settings .wall-fold-body .tmpl-hint { padding: 4px 14px 8px !important; }
+.wall-fold-settings .wall-fold-body > .wall-set-hint,
+.wall-fold-settings .wall-fold-body .wall-add-row { margin-left: 0; margin-right: 0; }

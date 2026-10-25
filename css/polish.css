@@ -1,0 +1,44 @@
+/* ==========================================================
+   見た目の仕上げ(polish.css)  ★いちばん最後に読み込む★
+   ・カードのやわらかい影と丸み
+   ・数字の見せ方(¥を小さく/単位を小さく)
+   ・ロゴの表示(ホーム上部・PCのサイドバー・初回の画面)
+   ========================================================== */
+
+/* ---- カード: 角を丸く、うっすら影 ---- */
+.card, .history-card, .workplace-card, .hm-payout, .wall-note, .wall-card,
+.breakdown-card, .stat-card, .payout-card { box-shadow: 0 2px 10px rgba(20, 50, 40, 0.06); }
+.card { border-radius: 16px; }
+.history-card, .workplace-card, .hm-payout, .wall-note { border-radius: 16px; }
+.calendar-cell:not(.empty) { box-shadow: 0 1px 4px rgba(20, 50, 40, 0.05); }
+.addstyle-row svg { color: var(--brand); }
+
+/* ---- 数字の見せ方 ---- */
+.amt { font-variant-numeric: tabular-nums; }
+.amt-yen { font-size: 0.52em; font-weight: 600; margin-right: 0.1em; opacity: 0.85; }
+.hm-n { font-variant-numeric: tabular-nums; font-weight: 700; }
+.hm-u { font-size: 0.85em; margin: 0 0.15em 0 0.08em; opacity: 0.9; }
+.hm-payout-amt .amt-yen { font-size: 0.6em; }
+.wall-income .amt-yen { font-size: 0.5em; }
+.wall-income { font-weight: 800; letter-spacing: -0.01em; }
+
+/* ---- ロゴ: スマホ・タブレットのホーム上部 ---- */
+.brand-bar { display: flex; align-items: center; gap: 10px; padding: 16px 20px 0; }
+.brand-icon { width: 34px; height: 34px; border-radius: 9px; box-shadow: 0 2px 8px var(--brand-shadow); display: block; }
+.brand-name { font-size: 19px; font-weight: 800; color: var(--brand-dark); letter-spacing: 0.02em; }
+.brand-bar + #home-content .home-month-row { padding-top: 14px; }
+
+/* ---- ロゴ: 初回の「ご利用にあたって」の画面 ---- */
+.disc-modal-logo { width: 52px; height: 52px; border-radius: 14px; display: block; margin-bottom: 10px; box-shadow: 0 3px 10px var(--brand-shadow); }
+
+/* ---- ロゴ: PCの左サイドバー(上の文字を、ロゴ+「はたログ」に置き換える) ---- */
+@media (min-width: 1024px) {
+  .brand-bar { display: none; }
+  .tabbar::before {
+    content: "はたログ"; display: flex; align-items: center; min-height: 40px;
+    padding: 0 12px 0 52px; margin-bottom: 18px;
+    font-size: 20px; font-weight: 800; color: var(--brand-dark); letter-spacing: 0.02em;
+    background: url("../img/icon-round-144.png") no-repeat 10px center / 36px 36px;
+    border-radius: 9px;
+  }
+}
