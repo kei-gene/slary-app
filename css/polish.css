@@ -42,3 +42,10 @@
     border-radius: 9px;
   }
 }
+
+/* ---- テンプレート一覧: 白いボックスの中で、文字が端にくっつかないように ----
+   (もともとは「日ごとのシフト」のポップアップ用で、余白がなかったため) */
+.card > .day-shift-item { padding: 13px 16px; gap: 12px; }
+.card > .day-shift-item .day-shift-info { flex: 1; min-width: 0; }
+.card > .day-shift-item .day-shift-info > div { overflow-wrap: anywhere; }
+.card > .day-shift-item .day-shift-actions { gap: 22px; flex-shrink: 0; padding-right: 8px; }
