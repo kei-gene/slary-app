@@ -31,7 +31,7 @@
 /* ---- ロゴ: 初回の「ご利用にあたって」の画面 ---- */
 .disc-modal-logo { width: 52px; height: 52px; border-radius: 14px; display: block; margin-bottom: 10px; box-shadow: 0 3px 10px var(--brand-shadow); }
 
-/* ---- ロゴ: PCの左サイドバー(上の文字を、ロゴ+「かせログ」に置き換える) ---- */
+/* ---- ロゴ: PCの左サイドバー(上の文字を、ロゴ+「はたログ」に置き換える) ---- */
 @media (min-width: 1024px) {
   .brand-bar { display: none; }
   .tabbar::before {
@@ -49,3 +49,21 @@
 .card > .day-shift-item .day-shift-info { flex: 1; min-width: 0; }
 .card > .day-shift-item .day-shift-info > div { overflow-wrap: anywhere; }
 .card > .day-shift-item .day-shift-actions { gap: 22px; flex-shrink: 0; padding-right: 8px; }
+
+
+/* ==========================================================
+   時刻・日付の入力枠: iPhone(Safari/Chrome)で文字が上に寄るのを直し、枠の中央に揃える
+   ========================================================== */
+.modal-input[type="time"], .modal-input[type="date"],
+.row-input[type="time"], .row-input[type="date"],
+.holiday-add-row input[type="date"] {
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1.2; text-align: center;
+}
+input[type="time"]::-webkit-date-and-time-value,
+input[type="date"]::-webkit-date-and-time-value {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; min-height: 0; margin: 0; text-align: center;
+}
+input[type="time"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit { padding: 0; }
