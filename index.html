@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>はたログ</title>
+<title>かせログ</title>
 <meta name="description" content="アルバイト・パートの給料を、シフトから自動で計算。年収の壁もひと目でわかる管理アプリ。">
 <meta name="theme-color" content="#12A36A">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="img/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-title" content="はたログ">
+<meta name="apple-mobile-web-app-title" content="かせログ">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <!-- CSS: 色の設定 → 土台 → 機能ごと → 仕上げ(順番が大事です) -->
@@ -31,7 +31,7 @@
   <section id="screen-home" class="screen active">
     <div class="brand-bar">
       <img class="brand-icon" src="img/icon-96.png" alt="" width="34" height="34">
-      <span class="brand-name">はたログ</span>
+      <span class="brand-name">かせログ</span>
     </div>
     <div id="home-content"></div>
     <div class="section-label">カレンダー</div>
@@ -302,6 +302,7 @@
 
 <!-- JS: 読み込む順番が大事です(上から順に実行されます)
      1. 免責の文章  2. 土台(script.js)  3. 機能(下の順番のまま) -->
+<script src="js/app-config.js"></script>
 <script src="js/disclaimer-text.js"></script>
 <script src="js/script.js"></script>
 <script src="js/features/format.js"></script>

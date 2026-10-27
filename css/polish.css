@@ -31,11 +31,11 @@
 /* ---- ロゴ: 初回の「ご利用にあたって」の画面 ---- */
 .disc-modal-logo { width: 52px; height: 52px; border-radius: 14px; display: block; margin-bottom: 10px; box-shadow: 0 3px 10px var(--brand-shadow); }
 
-/* ---- ロゴ: PCの左サイドバー(上の文字を、ロゴ+「はたログ」に置き換える) ---- */
+/* ---- ロゴ: PCの左サイドバー(上の文字を、ロゴ+「かせログ」に置き換える) ---- */
 @media (min-width: 1024px) {
   .brand-bar { display: none; }
   .tabbar::before {
-    content: "はたログ"; display: flex; align-items: center; min-height: 40px;
+    content: var(--app-name, ""); display: flex; align-items: center; min-height: 40px;
     padding: 0 12px 0 52px; margin-bottom: 18px;
     font-size: 20px; font-weight: 800; color: var(--brand-dark); letter-spacing: 0.02em;
     background: url("../img/icon-round-144.png") no-repeat 10px center / 36px 36px;
