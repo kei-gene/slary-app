@@ -4,7 +4,7 @@
 // 目的: 開いた瞬間に「今月いくら?」「次の給料日は?」が分かるようにする
 //
 // 変えた点
-//  ・予想給与 + 目標バー + 勤務時間/日数 を 1枚のカードにまとめた
+//  ・今月の稼ぎ + 目標バー + 勤務時間/日数 を 1枚のカードにまとめた
 //  ・「次の給料日」は、一番近い1件だけを1行で表示(ほかの勤務先・対象期間は、タップで展開)
 //  ・ホーム下の「＋シフトを追加」ボタンを削除(下のタブの「＋」と重複していたため)
 //  ・ホームのカレンダーは、金額だけを表示(時間は日付をタップすると見られます)
@@ -104,6 +104,11 @@
     const label = homeMonthOffset === 0 ? "今月" : "来月";
     const hasMultiWp = sum.byWorkplace.length > 1;
 
+    // まだ働いていない予定のシフトが含まれるときだけ「予定を含む」と添える
+    const ym = `${sum.base.getFullYear()}-${String(sum.base.getMonth() + 1).padStart(2, "0")}`;
+    const hasFuture = state.shifts.some((x) => x.date.startsWith(ym) && x.date > todayStr());
+    const futureNote = hasFuture ? ` <span style="font-size:11px;color:#8E8E93;margin-left:4px">予定を含む</span>` : "";
+
     // 目標(0円に設定されているときは表示しない)
     let goalHtml = "";
     const goal = state.monthlyGoal;
@@ -136,7 +141,7 @@
       </div>
       <div class="hm-main">
         <div class="hm-card">
-          <div class="hm-label">${label}の予想給与</div>
+          <div class="hm-label">${label}の稼ぎ${futureNote}</div>
           <div class="hm-amount">${yenBig(sum.pay)}</div>
           <div class="hm-meta">${numUnit((sum.minutes / 60).toFixed(1), "時間")} ・ ${numUnit(sum.days, "日")}${hasMultiWp ? ` ・ <button type="button" class="hm-toggle hm-toggle-inline" id="hm-bd-toggle">内訳${hmBreakdown ? "を閉じる" : ""}</button>` : ""}</div>
           ${breakdownHtml}
