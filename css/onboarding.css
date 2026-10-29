@@ -1,0 +1,65 @@
+/* ---- 初回ガイド (onboarding) ---- */
+.gd-card {
+  margin: 8px 20px 12px; padding: 14px 16px 12px; background: #fff; border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(18, 163, 106, 0.12);
+  border: 1px solid var(--brand-border, #B7E4CD);
+}
+.gd-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.gd-h1 { font-size: 17px; font-weight: 800; color: var(--brand-dark, #0B7F52); }
+.gd-h2 { font-size: 12px; color: #636366; margin-top: 2px; }
+.gd-x { border: none; background: none; color: #8E8E93; font-size: 12px; font-family: inherit; cursor: pointer; padding: 4px 0 4px 8px; flex-shrink: 0; }
+
+.gd-step { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid #E5E5EA; }
+.gd-mark {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--brand-tint, #E6F6EE); color: var(--brand-dark, #0B7F52); font-size: 14px; font-weight: 700;
+}
+.gd-body { flex: 1; min-width: 0; }
+.gd-title { font-size: 15px; font-weight: 700; color: #1C1C1E; }
+.gd-desc { font-size: 12px; color: #636366; line-height: 1.55; margin-top: 2px; }
+.gd-btn {
+  flex-shrink: 0; height: 36px; padding: 0 14px; border: none; border-radius: 10px; cursor: pointer;
+  background: var(--brand, #12A36A); color: #fff; font-size: 13px; font-weight: 700; font-family: inherit;
+  white-space: nowrap; -webkit-tap-highlight-color: transparent;
+}
+.gd-btn:active { background: var(--brand-dark, #0B7F52); }
+.gd-done .gd-mark { background: var(--brand, #12A36A); color: #fff; }
+.gd-done .gd-title { color: #8E8E93; text-decoration: line-through; text-decoration-color: #C7C7CC; }
+.gd-done .gd-desc { display: none; }
+.gd-wait { opacity: 0.5; }
+.gd-foot { font-size: 12px; color: #8E8E93; line-height: 1.7; padding-top: 10px; }
+.gd-link { border: none; background: none; padding: 0; font: inherit; color: var(--brand-dark, #0B7F52); text-decoration: underline; cursor: pointer; }
+
+/* かんたん登録 */
+.gd-select {
+  padding-right: 32px; text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238E8E93' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+.gd-hint { font-size: 12px; color: #8E8E93; line-height: 1.6; margin-top: 12px; }
+.gd-error { font-size: 12px; color: #D70015; font-weight: 600; min-height: 0; margin-top: 8px; }
+.gd-error:empty { display: none; }
+
+.gd-opt { margin-left: 6px; font-size: 11px; color: #8E8E93; text-transform: none; }
+.gd-night { margin: 12px 0 0; }
+.gd-done-mark {
+  width: 48px; height: 48px; margin: 6px auto 10px; border-radius: 50%; background: var(--brand, #12A36A);
+  color: #fff; font-size: 26px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+}
+.gd-done-title { text-align: center; font-size: 18px; font-weight: 800; }
+.gd-done-text { text-align: center; font-size: 13px; color: #636366; line-height: 1.7; margin-top: 8px; }
+.gd-later { width: 100%; margin-top: 10px; flex: none; }
+
+/* シフト追加画面: 勤務先がないときの案内 */
+.gd-add-hint {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin: 12px 20px 0; padding: 12px 14px; border-radius: 12px;
+  background: var(--brand-tint, #E6F6EE); color: var(--brand-dark, #0B7F52); font-size: 13px; font-weight: 600;
+}
+
+/* PC: ホームの2列表示でも、1行いっぱいに */
+@media (min-width: 1024px) {
+  #home-content > .gd-card { grid-column: 1 / -1; margin: 0 0 16px; padding: 18px 24px 14px; }
+  .gd-add-hint { margin-left: 0; margin-right: 0; }
+}
