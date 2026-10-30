@@ -46,6 +46,10 @@
 }
 
 /* ベルマーク(ホーム右上) */
+/* ロゴの帯(スマホ・タブレット): ロゴは左、ベルは右端 */
+.brand-bar .nw-bell { margin-left: auto; }
+.brand-bar + #home-content .home-month-row { gap: 8px; }
+/* ロゴの帯がないときの予備: 「今月/来月」の横に置く */
 #home-content .home-month-row { gap: 8px; }
 #home-content .home-month-row .home-month { flex: 1; min-width: 0; }
 .nw-bell {
@@ -59,4 +63,10 @@
   position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 9px; background: #FF3B30; color: #fff; font-size: 11px; font-weight: 700; line-height: 18px;
   text-align: center; box-shadow: 0 0 0 2px #fff;
+}
+
+/* PC: ロゴは左のサイドバーにあるので、ロゴの帯は「ベルだけ」を右上に出す */
+@media (min-width: 1024px) {
+  .brand-bar.nw-has-bell { display: flex; justify-content: flex-end; padding: 16px 20px 0; }
+  .brand-bar.nw-has-bell .brand-icon, .brand-bar.nw-has-bell .brand-name { display: none; }
 }

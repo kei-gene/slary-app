@@ -2,7 +2,7 @@
 // お知らせ機能  (js/features/news.js)
 //
 // ・アプリを開いたときに news.json を読み込む
-// ・ホームの右上に「ベルマーク」を常に表示。新しいお知らせがあるときは、赤い数字の印がつく
+// ・ホームのロゴの右に「ベルマーク」を常に表示。新しいお知らせがあるときは、赤い数字の印がつく
 // ・ベルをタップすると、お知らせの一覧(新しい順)が開く。読んだお知らせは「NEW」が消えるだけで、一覧には残る
 // ・「重要」のお知らせだけは、読むまでホームの上に帯でも出す
 // ・読み込むだけで、利用者のデータは送信しません
@@ -69,8 +69,15 @@
   const BELL_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`;
 
   function injectBell() {
-    const row = document.querySelector("#home-content .home-month-row");
-    if (!row || row.querySelector(".nw-bell") || items.length === 0) return;
+    // ロゴの右端に置く(ロゴの帯はホームの画面ごとに1つだけで、作り直されないので、毎回つけ直す)
+    const bar = document.querySelector(".brand-bar");
+    const fallback = document.querySelector("#home-content .home-month-row"); // ロゴの帯がないとき用
+    const host = bar || fallback;
+    if (!host) return;
+    host.querySelectorAll(".nw-bell").forEach((el) => el.remove());
+    if (bar) bar.classList.toggle("nw-has-bell", items.length > 0);
+    if (items.length === 0) return;
+
     const n = unread().length;
     const btn = document.createElement("button");
     btn.type = "button";
@@ -78,7 +85,8 @@
     btn.setAttribute("aria-label", n > 0 ? `お知らせ(未読${n}件)` : "お知らせ");
     btn.innerHTML = BELL_SVG + (n > 0 ? `<span class="nw-badge">${n > 9 ? "9+" : n}</span>` : "");
     btn.onclick = openNews;
-    row.insertBefore(btn, row.querySelector(".month-segment"));
+    if (bar) host.appendChild(btn);
+    else host.insertBefore(btn, host.querySelector(".month-segment"));
   }
 
   function injectBanner() {
