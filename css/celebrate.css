@@ -1,0 +1,18 @@
+/* ---- 目標達成のお祝い (goal-celebration) ---- */
+.gc-overlay {
+  position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.4); animation: gc-fade 0.25s ease;
+}
+.gc-canvas { position: absolute; inset: 0; pointer-events: none; }
+.gc-card {
+  position: relative; width: 86%; max-width: 340px; padding: 26px 22px 22px; border-radius: 20px; background: #fff;
+  text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); animation: gc-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.gc-emoji { font-size: 54px; line-height: 1; }
+.gc-title { font-size: 19px; font-weight: 800; color: var(--brand-dark, #0B7F52); margin-top: 10px; line-height: 1.5; }
+.gc-text { font-size: 14px; color: #3A3A3C; line-height: 1.8; margin-top: 10px; }
+.gc-text b { font-size: 17px; color: #1C1C1E; font-variant-numeric: tabular-nums; }
+.gc-btn { margin-top: 18px; }
+@keyframes gc-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gc-pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gc-overlay, .gc-card { animation: none; } }
