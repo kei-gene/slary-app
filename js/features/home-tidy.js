@@ -25,7 +25,8 @@
     const mKey = monthKey(base);
     const shifts = state.shifts.filter((s) => monthKey(new Date(s.date + "T00:00:00")) === mKey);
 
-    let pay = 0, minutes = 0;
+    let pay = 0, minutes = 0, earned = 0; // earned = 今日までに働いた分(予定は含まない)
+    const today = todayStr();
     const days = new Set();
     const perWp = {};
     shifts.forEach((s) => {
@@ -33,6 +34,7 @@
       const r = computePay(wp, s.date, s.start, s.end, s.breakMin, state.holidays);
       if (!r) return;
       pay += r.pay;
+      if (s.date <= today) earned += r.pay;
       minutes += r.workedMinutes;
       days.add(s.date); // 同じ日に2件あっても1日と数える
       perWp[s.workplaceId] = (perWp[s.workplaceId] || 0) + r.pay;
@@ -40,7 +42,7 @@
     const byWorkplace = state.workplaces
       .map((w) => ({ name: w.name, pay: perWp[w.id] || 0 }))
       .filter((w) => w.pay > 0);
-    return { base, pay, minutes, days: days.size, byWorkplace };
+    return { base, pay, earned, minutes, days: days.size, byWorkplace };
   }
 
   // ---------- 次の給料日(勤務先ごと) ----------
@@ -104,21 +106,36 @@
     const label = homeMonthOffset === 0 ? "今月" : "来月";
     const hasMultiWp = sum.byWorkplace.length > 1;
 
-    // まだ働いていない予定のシフトが含まれるときだけ「予定を含む」と添える
+    // まだ働いていない予定のシフトが含まれるときだけ「予定込み」の印と、「今日まで」の金額を出す
     const ym = `${sum.base.getFullYear()}-${String(sum.base.getMonth() + 1).padStart(2, "0")}`;
     const hasFuture = state.shifts.some((x) => x.date.startsWith(ym) && x.date > todayStr());
-    const futureNote = hasFuture ? ` <span style="font-size:11px;color:#8E8E93;margin-left:4px">予定を含む</span>` : "";
+    const showEarned = homeMonthOffset === 0 && hasFuture; // 今月で、予定が残っているとき
+    const futureNote = hasFuture ? `<span class="hm-tag">予定込み</span>` : "";
+    const earnedHtml = showEarned
+      ? `<div class="hm-earned"><span class="hm-dot"></span>今日まで <b>${yen(sum.earned)}</b></div>`
+      : "";
 
     // 目標(0円に設定されているときは表示しない)
+    //  ・予定が残っている月: 濃いバー=今日まで / 薄いバー=予定を足した分。達成の判定は「今日まで」
+    //  ・来月: 予定だけなので、予定どおりに働いた場合の金額で表示
     let goalHtml = "";
     const goal = state.monthlyGoal;
     if (goal > 0) {
-      const progress = Math.min(sum.pay / goal, 1);
-      const remain = Math.max(goal - sum.pay, 0);
+      const basis = homeMonthOffset === 0 ? sum.earned : sum.pay; // 判定に使う金額
+      const remain = Math.max(goal - basis, 0);
+      const done = remain === 0;
+      const planPct = Math.min(sum.pay / goal, 1) * 100;
+      const donePct = Math.min(basis / goal, 1) * 100;
+      const text = done
+        ? (homeMonthOffset === 0 ? "🎉 目標達成！" : "予定どおりなら達成")
+        : (showEarned ? `目標まで あと ${yen(remain)}` : `あと ${yen(remain)}`);
       goalHtml = `
-        <div class="hm-goal${remain === 0 ? " hm-goal-done" : ""}">
-          <div class="hm-goal-top"><span>目標 ${yen(goal)}</span><b>${remain === 0 ? "達成" : `あと ${yen(remain)}`}</b></div>
-          <div class="hm-goal-bar"><div class="hm-goal-fill" style="width:${progress * 100}%"></div></div>
+        <div class="hm-goal${done ? " hm-goal-done" : ""}">
+          <div class="hm-goal-top"><span>目標 ${yen(goal)}</span><b>${text}</b></div>
+          <div class="hm-goal-bar">
+            ${showEarned ? `<div class="hm-goal-plan" style="width:${planPct}%"></div>` : ""}
+            <div class="hm-goal-fill" style="width:${donePct}%"></div>
+          </div>
         </div>`;
     }
 
@@ -144,6 +161,7 @@
           <div class="hm-label">${label}の稼ぎ${futureNote}</div>
           <div class="hm-amount">${yenBig(sum.pay)}</div>
           <div class="hm-meta">${numUnit((sum.minutes / 60).toFixed(1), "時間")} ・ ${numUnit(sum.days, "日")}${hasMultiWp ? ` ・ <button type="button" class="hm-toggle hm-toggle-inline" id="hm-bd-toggle">内訳${hmBreakdown ? "を閉じる" : ""}</button>` : ""}</div>
+          ${earnedHtml}
           ${breakdownHtml}
           ${goalHtml}
           ${emptyHtml}

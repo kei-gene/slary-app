@@ -101,3 +101,20 @@
   .hm-card { padding: 28px 32px; }
   .hm-card .hm-amount { font-size: 62px; }
 }
+
+/* ---- ホームの「今日まで」表示と2色の目標バー (home-tidy.css の一番下に追加) ---- */
+
+/* 「予定込み」の小さな印 */
+.hm-tag { font-size: 11px; margin-left: 6px; background: rgba(255, 255, 255, 0.22); border-radius: 6px; padding: 1px 7px; }
+
+/* 「今日まで ¥68,000」の1行 */
+.hm-earned { display: flex; align-items: center; margin-top: 10px; font-size: 13px; color: #fff; }
+.hm-earned b { margin-left: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hm-dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; background: #fff; }
+
+/* 目標バー: 薄い色(予定を足した分)の上に、濃い色(今日まで)を重ねる */
+.hm-goal-bar { position: relative; }
+.hm-goal-plan { position: absolute; left: 0; top: 0; bottom: 0; background: var(--brand-light, #8ED9B6); border-radius: inherit; }
+.hm-goal-fill { position: relative; }
+.hm-card .hm-goal-plan { background: rgba(255, 255, 255, 0.55); }
+.hm-card .hm-goal-done .hm-goal-top b { color: #FFE9A8; font-weight: 700; }
