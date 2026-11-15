@@ -1,5 +1,5 @@
 // ==========================================================
-// お知らせ機能  (js/features/news.js)
+// お知らせ機能  (js/features/news.js)   【v3: 本文の飾り(色・マーカー・大きさ・取り消し線)に対応】
 //
 // ・アプリを開いたときに news.json を読み込む
 // ・ホームのロゴの右に「ベルマーク」を常に表示。新しいお知らせがあるときは、赤い数字の印がつく
@@ -9,22 +9,26 @@
 // ・読み込みに失敗しても(オフライン等)、何も表示せず、アプリは普通に動きます
 // ・script.js は書き換えず、上から包んで変更しています
 //
-// 【本文の飾り】(HTMLは使えません。この記号だけが飾りになります。組み合わせ・入れ子もOK)
-//   **太字**            → 太字
-//   __下線__            → 下線
-//   ~~取り消し~~        → 取り消し線
-//   ==マーカー==        → 黄色のマーカー   /  ==ピンク|文字==  のように色も選べる(黄・ピンク・緑・青・橙)
-//   {赤|文字}           → 文字の色(赤・青・緑・橙・紫・灰、または #E5484D のような色コード)
-//   {大|文字}           → 文字の大きさ(小・大・特大)     /  {赤,大|文字}  のように , で組み合わせ
-//   [文字](https://...) → リンク
-//
 // 【お知らせの出し方】 news.json を編集して、他のファイルと一緒に公開するだけ
+//   (news.json は「かせログ お知らせエディタ」で作れます)
 //   id    : 重複しない文字列(これが同じなら「読んだ」扱いのまま。新しく出したいときは新しいidに)
 //   date  : 表示する日付(YYYY-MM-DD)
-//   title : 見出し(短く)
-//   body  : 本文(\n で改行。リンクや、太字・色・マーカーなどの飾りも使えます。書き方は下の「本文の飾り」)
+//   title : 見出し(短く。\n で改行できます)
+//   body  : 本文(\n で改行)。次の書き方で飾れます(お知らせエディタのボタンでも付けられます)
+//             リンク       [表示する文字](https://...)
+//             太字         **文字**
+//             下線         __文字__
+//             取り消し線   ~~文字~~
+//             文字の色     {c=#ff3b30|文字}   (やさしい書き方: {赤|文字}  赤・青・緑・橙・紫・灰)
+//             マーカー     {m=#ffe066|文字}   (やさしい書き方: ==文字== / ==ピンク|文字==)
+//             大きさ       {s=大|文字}        (小・大・特大)
+//             重ねてもOK   例: {c=#ff3b30,s=大|**赤くて大きい太字**}
 //   level : "info"(ふつう) / "important"(オレンジで目立たせる)
 //   until : (任意) この日を過ぎたら表示しない(YYYY-MM-DD)
+//   style : (任意) 見た目の指定。使わない項目は書かなくてOK
+//             accent=アクセント色 / bg=背景色 / titleColor=見出しの色 / bodyColor=本文の色  (#RRGGBB の形)
+//             titleSize=見出しの大きさ(12〜32) / bodySize=本文の大きさ(11〜22)  (数字。単位はpx)
+//             ※ 一覧では、見出しは titleSize より少し小さく表示されます
 // ==========================================================
 (function () {
   const NEWS_URL = "news.json";
@@ -39,6 +43,36 @@
   function saveMeta(patch) { try { localStorage.setItem(LS_META, JSON.stringify({ ...loadMeta(), ...patch })); } catch (e) {} }
   const isDate = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
+  // ---------- 見た目の指定(style) ----------
+  // 色は #RGB / #RRGGBB だけ、大きさは範囲内の数字だけを通す(それ以外は無視。安全のため)
+  const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+  function cleanStyle(s) {
+    const o = {};
+    if (!s || typeof s !== "object") return o;
+    ["accent", "bg", "titleColor", "bodyColor"].forEach((k) => {
+      if (typeof s[k] === "string" && HEX.test(s[k])) o[k] = s[k];
+    });
+    const num = (v, lo, hi) => (typeof v === "number" && isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : 0);
+    const ts = num(s.titleSize, 12, 32); if (ts) o.titleSize = ts;
+    const bs = num(s.bodySize, 11, 22); if (bs) o.bodySize = bs;
+    return o;
+  }
+  // 色の上に置く文字を、白か黒かで選ぶ(明るい色の上でも読めるように)
+  function inkOn(hex) {
+    let h = hex.slice(1);
+    if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+    const n = parseInt(h, 16);
+    const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    const L = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    return 1.05 / (L + 0.05) >= 3 ? "#fff" : "#1C1C1E";
+  }
+  const css = (list) => list.filter(Boolean).join(";");
+  const styleAttr = (c) => (c ? ` style="${c}"` : "");
+  // 背景色・アクセント色があるとき、「枠つきのカード」にする
+  const boxCss = (s) => (s.bg || s.accent
+    ? css([s.bg && `background:${s.bg}`, s.accent && `border-left:4px solid ${s.accent}`, "border-radius:10px", "padding:12px"])
+    : "");
+
   // ---------- 読み込み ----------
   function cleanItems(json) {
     const list = json && Array.isArray(json.items) ? json.items : [];
@@ -52,6 +86,7 @@
         title: x.title.slice(0, 80),
         body: typeof x.body === "string" ? x.body.slice(0, 3000) : "",
         important: x.level === "important",
+        style: cleanStyle(x.style),
       }))
       .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
       .slice(0, MAX_ITEMS);
@@ -103,12 +138,14 @@
     if (!host || host.querySelector(".nw-banner")) return;
     const list = unread().filter((x) => x.important); // 読むまで目立たせるのは、重要なものだけ
     if (list.length === 0) return;
+    const s = list[0].style || {};
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "nw-banner nw-important";
+    if (s.bg) btn.style.background = s.bg;
     btn.innerHTML = `
-      <span class="nw-tag">重要</span>
-      <span class="nw-title">${esc(list[0].title)}</span>
+      <span class="nw-tag"${styleAttr(css([s.accent && `background:${s.accent}`, s.accent && `color:${inkOn(s.accent)}`]))}>重要</span>
+      <span class="nw-title"${styleAttr(css([s.titleColor && `color:${s.titleColor}`]))}>${esc(list[0].title.replace(/\s*\n\s*/g, " "))}</span>
       ${list.length > 1 ? `<span class="nw-more">ほか${list.length - 1}件</span>` : ""}
       <span class="nw-chev">›</span>`;
     btn.onclick = openNews;
@@ -121,81 +158,64 @@
     try { injectBell(); injectBanner(); } catch (e) { console.error("お知らせの表示でエラー(通常のホームのまま表示します)", e); }
   };
 
-  // ---------- 本文の飾り ----------
-  // 安全のため、HTMLは無効にしたうえで、決まった記号だけを、決まった見た目に変える
-  const TEXT_COLORS = { 赤: "#E5484D", 青: "#2F7FE0", 緑: "#12A36A", 橙: "#E67700", 紫: "#8E4EC6", 灰: "#8E8E93" };
-  const MARK_COLORS = { 黄: "#FFE066", ピンク: "#FFC2D4", 緑: "#B7F0CF", 青: "#BFE0FF", 橙: "#FFD6A5" };
-  const SIZES = { 小: "0.85em", 大: "1.2em", 特大: "1.45em" };
-  const HEX = /^#[0-9A-Fa-f]{6}$/;
-
-  // {赤,大|文字} の「赤,大」を、見た目(style)に直す。分からない指定があれば null
-  function styleOf(keys) {
-    const parts = [];
-    for (const raw of keys.split(",")) {
-      const k = raw.trim();
-      if (TEXT_COLORS[k]) parts.push(`color:${TEXT_COLORS[k]}`);
-      else if (HEX.test(k)) parts.push(`color:${k}`);
-      else if (SIZES[k]) parts.push(`font-size:${SIZES[k]};line-height:1.5`);
+  // ---------- 一覧・詳細(モーダル) ----------
+  // 本文の整形: HTMLは無効にしたうえで、改行・リンク・飾り(太字/下線/文字色/マーカー)だけ使えるようにする
+  /*render-begin*/
+  // 本文の飾り(アプリの news.js と、お知らせエディタで、まったく同じ処理)
+  //   **太字**  __下線__  ~~取り消し線~~  ==マーカー==  [文字](https://...) のリンク
+  //   {c=#ff3b30|文字色}  {m=#ffe066|マーカー}  {s=大|大きさ(小・大・特大)}  {c=#ff3b30,s=大|重ねて指定}
+  //   やさしい書き方も使えます: {赤|文字} {赤,大|文字} ==ピンク|文字==
+  const TXT_NAMES = { 赤: '#E5484D', 青: '#2F7FE0', 緑: '#12A36A', 橙: '#E67700', 紫: '#8E4EC6', 灰: '#8E8E93' };
+  const MRK_NAMES = { 黄: '#FFE066', ピンク: '#FFC2D4', 緑: '#B7F0CF', 青: '#BFE0FF', 橙: '#FFD6A5' };
+  const SIZE_NAMES = { 小: '0.85em', 大: '1.2em', 特大: '1.45em' };
+  const HEXC = '#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})';
+  const HEX_ONLY = new RegExp('^' + HEXC + '$');
+  const MRK_CSS = (h) => `background:linear-gradient(transparent 45%,${h} 45%);-webkit-box-decoration-break:clone;box-decoration-break:clone`;
+  function fmtStyle(keys) { // "c=#f00,s=大" や "赤,大" → style文字列。知らない指定が1つでもあれば null(記号のまま表示)
+    const out = [];
+    for (let k of keys.split(',')) {
+      k = k.trim();
+      let m;
+      if ((m = k.match(/^c=(.+)$/))) { const v = HEX_ONLY.test(m[1]) ? m[1] : TXT_NAMES[m[1]]; if (!v) return null; out.push('color:' + v); }
+      else if ((m = k.match(/^m=(.+)$/))) { const v = HEX_ONLY.test(m[1]) ? m[1] : MRK_NAMES[m[1]]; if (!v) return null; out.push(MRK_CSS(v)); }
+      else if ((m = k.match(/^s=(.+)$/))) { if (!SIZE_NAMES[m[1]]) return null; out.push('font-size:' + SIZE_NAMES[m[1]] + ';line-height:1.5'); }
+      else if (TXT_NAMES[k]) out.push('color:' + TXT_NAMES[k]);
+      else if (SIZE_NAMES[k]) out.push('font-size:' + SIZE_NAMES[k] + ';line-height:1.5');
       else return null;
     }
-    return parts.join(";");
+    return out.length ? out.join(';') : null;
   }
-
-  // 飾りの記号を、安全なHTMLに変える(入力は esc() ずみの文字)
-  function decorate(t) {
-    t = t.replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>")
-         .replace(/__([\s\S]+?)__/g, '<u class="nw-u">$1</u>')
-         .replace(/~~([\s\S]+?)~~/g, "<s>$1</s>")
-         .replace(/==([\s\S]+?)==/g, (m, inner) => {
-           let color = MARK_COLORS["黄"], body = inner;
-           const sep = inner.indexOf("|");
-           if (sep > 0 && sep <= 8) {
-             const k = inner.slice(0, sep).trim();
-             if (MARK_COLORS[k]) { color = MARK_COLORS[k]; body = inner.slice(sep + 1); }
-             else if (HEX.test(k)) { color = k; body = inner.slice(sep + 1); }
-           }
-           return `<mark class="nw-mk" style="background-image:linear-gradient(transparent 55%,${color} 55%)">${body}</mark>`;
-         });
-    // {色|文字} は、入れ子にも対応するため、内側から順に変える
-    for (let i = 0; i < 6; i++) {
-      const next = t.replace(/\{([^|{}\n]+)\|([^{}]+?)\}/g, (m, keys, body) => {
-        const st = styleOf(keys);
-        return st ? `<span style="${st}">${body}</span>` : m;
-      });
-      if (next === t) break;
-      t = next;
-    }
-    return t;
+  function inlineFmt(s) { // HTMLを無効にした文字を受け取って、飾りだけHTMLにする。色は #RGB / #RRGGBB と決めた名前だけ通す
+    let prev, n = 0;
+    do {
+      prev = s;
+      s = s.replace(/\{([^{}|\n]{1,40})\|([^{}]*)\}/g, (m, keys, t) => { const st = fmtStyle(keys); return st ? `<span style="${st}">${t}</span>` : m.replace(/\{/g, '\u0003').replace(/\}/g, '\u0004'); });
+    } while (s !== prev && ++n < 8); // 入れ子は、内側から順に変える(知らない指定は、あとで { } に戻す)
+    s = s.replace(/\u0003/g, '{').replace(/\u0004/g, '}');
+    return s
+      .replace(/==(?:(黄|ピンク|緑|青|橙|#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}))\|)?([^=\n]+?)==/g, (m, c, t) => `<span style="${MRK_CSS(c ? (MRK_NAMES[c] || c) : MRK_NAMES['黄'])}">${t}</span>`)
+      .replace(/\*\*([^*\n]+)\*\*/g, '<span style="font-weight:700">$1</span>')
+      .replace(/__([^_\n]+)__/g, '<span style="text-decoration:underline;text-underline-offset:3px">$1</span>')
+      .replace(/~~([^~\n]+)~~/g, '<span style="text-decoration:line-through">$1</span>');
   }
-
-  const LINK_RE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g;
-
-  // 本文の整形: HTMLは無効にしたうえで、飾り・リンク・改行だけを使えるようにする
   function bodyHtml(text) {
-    const links = [];
-    // リンクのアドレスの中の記号が、飾りと間違われないように、先に取り出しておく
-    let t = esc(text).replace(LINK_RE, (m, label, url) => {
-      links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">${decorate(label)}</a>`);
-      return `\u0000${links.length - 1}\u0000`;
+    const links = []; // リンクのURLが飾りの記号(__ など)で壊れないよう、先に取り出す
+    let s = esc(text).replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, (m, label, url) => {
+      links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">${inlineFmt(label)}</a>`);
+      return '\u0001' + (links.length - 1) + '\u0002';
     });
-    t = decorate(t).replace(/\n/g, "<br>");
-    return t.replace(/\u0000(\d+)\u0000/g, (m, i) => links[Number(i)]);
+    s = inlineFmt(s).replace(/\r?\n/g, '<br>');
+    return s.replace(/\u0001(\d+)\u0002/g, (m, i) => links[Number(i)]);
   }
-
-  // 一覧に出す短い抜粋(飾りの記号は外して、文字だけにする)
+  // 一覧に出す短い抜粋(飾りは外して、文字だけにする)
   function previewText(text) {
-    let t = text.replace(LINK_RE, "$1");
-    for (let i = 0; i < 6; i++) {
-      const next = t.replace(/\{[^|{}\n]+\|([^{}]*)\}/g, "$1");
-      if (next === t) break;
-      t = next;
-    }
-    t = t.replace(/==(?:[^|=\n]{1,8}\|)?([\s\S]+?)==/g, "$1")
-         .replace(/\*\*([\s\S]+?)\*\*/g, "$1")
-         .replace(/__([\s\S]+?)__/g, "$1")
-         .replace(/~~([\s\S]+?)~~/g, "$1");
-    return t.replace(/\s+/g, " ").trim();
+    return bodyHtml(text).replace(/<br>/g, ' ').replace(/<[^>]*>/g, '')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+      .replace(/\s+/g, ' ').trim();
   }
+  /*render-end*/
+  // 見出しの改行(\n)は、詳細と一覧では<br>、1行の帯ではスペースにする
+  const titleHtml = (t) => esc(t).replace(/\r?\n/g, "<br>");
 
   function openNews() {
     if (document.getElementById("nw-modal")) return;
@@ -218,31 +238,41 @@
           <span class="modal-close" id="nw-close" aria-label="閉じる">✕</span>
         </div>
         <div class="nw-list">
-          ${items.map((x, i) => `
-            <button type="button" class="nw-item${x.important ? " nw-item-important" : ""}" data-i="${i}">
+          ${items.map((x, i) => {
+            const s = x.style || {};
+            // 背景色・アクセント色があるときは、重要のお知らせと同じ「枠つきのカード」にする
+            const cardCss = s.bg || s.accent ? css([boxCss(s), "margin:6px 0", "border-bottom:none"]) : "";
+            const tsz = s.titleSize ? Math.round(s.titleSize * 15 / 18) : 0; // 一覧では少し小さく
+            const tcss = css([s.titleColor && `color:${s.titleColor}`, tsz && `font-size:${tsz}px`]);
+            return `
+            <button type="button" class="nw-item${x.important ? " nw-item-important" : ""}" data-i="${i}"${styleAttr(cardCss)}>
               <div class="nw-item-head">
                 ${r.has(x.id) ? "" : `<span class="nw-new">NEW</span>`}
                 <span class="nw-date">${esc(x.date.replace(/-/g, "/"))}</span>
                 <span class="nw-item-chev">›</span>
               </div>
-              <div class="nw-item-title">${esc(x.title)}</div>
+              <div class="nw-item-title"${styleAttr(tcss)}>${titleHtml(x.title)}</div>
               ${x.body ? `<div class="nw-item-preview">${esc(previewText(x.body))}</div>` : ""}
-            </button>`).join("") || `<div class="nw-empty">お知らせはありません</div>`}
+            </button>`;
+          }).join("") || `<div class="nw-empty">お知らせはありません</div>`}
         </div>`;
       document.getElementById("nw-close").onclick = close;
       box.querySelectorAll(".nw-item").forEach((el) => { el.onclick = () => showDetail(items[Number(el.dataset.i)]); });
     }
 
     function showDetail(x) {
+      const s = x.style || {};
+      const tcss = css([s.titleColor && `color:${s.titleColor}`, s.titleSize && `font-size:${s.titleSize}px`]);
+      const bcss = css([s.bodyColor && `color:${s.bodyColor}`, s.bodySize && `font-size:${s.bodySize}px`]);
       box.innerHTML = `
         <div class="modal-header">
           <button type="button" class="nw-back" id="nw-back">‹ 一覧へ</button>
           <span class="modal-close" id="nw-close" aria-label="閉じる">✕</span>
         </div>
-        <div class="nw-detail${x.important ? " nw-detail-important" : ""}">
+        <div class="nw-detail${x.important ? " nw-detail-important" : ""}"${styleAttr(boxCss(s))}>
           <div class="nw-date">${esc(x.date.replace(/-/g, "/"))}</div>
-          <div class="nw-detail-title">${esc(x.title)}</div>
-          <div class="nw-detail-body">${bodyHtml(x.body) || "(詳しい内容はありません)"}</div>
+          <div class="nw-detail-title"${styleAttr(tcss)}>${titleHtml(x.title)}</div>
+          <div class="nw-detail-body"${styleAttr(bcss)}>${bodyHtml(x.body) || "(詳しい内容はありません)"}</div>
         </div>`;
       document.getElementById("nw-back").onclick = showList;
       document.getElementById("nw-close").onclick = close;
