@@ -70,3 +70,12 @@
   .brand-bar.nw-has-bell { display: flex; justify-content: flex-end; padding: 16px 20px 0; }
   .brand-bar.nw-has-bell .brand-icon, .brand-bar.nw-has-bell .brand-name { display: none; }
 }
+
+/* 本文の飾り(太字・下線・マーカー) */
+.nw-detail-body strong { font-weight: 800; color: #1C1C1E; }
+.nw-detail-body .nw-u { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
+.nw-detail-body .nw-mk {
+  color: inherit; background-repeat: no-repeat; padding: 0 1px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone; /* 2行にまたがっても線が切れない */
+}
+.nw-detail-body s { color: #8E8E93; }

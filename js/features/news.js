@@ -9,11 +9,20 @@
 // ・読み込みに失敗しても(オフライン等)、何も表示せず、アプリは普通に動きます
 // ・script.js は書き換えず、上から包んで変更しています
 //
+// 【本文の飾り】(HTMLは使えません。この記号だけが飾りになります。組み合わせ・入れ子もOK)
+//   **太字**            → 太字
+//   __下線__            → 下線
+//   ~~取り消し~~        → 取り消し線
+//   ==マーカー==        → 黄色のマーカー   /  ==ピンク|文字==  のように色も選べる(黄・ピンク・緑・青・橙)
+//   {赤|文字}           → 文字の色(赤・青・緑・橙・紫・灰、または #E5484D のような色コード)
+//   {大|文字}           → 文字の大きさ(小・大・特大)     /  {赤,大|文字}  のように , で組み合わせ
+//   [文字](https://...) → リンク
+//
 // 【お知らせの出し方】 news.json を編集して、他のファイルと一緒に公開するだけ
 //   id    : 重複しない文字列(これが同じなら「読んだ」扱いのまま。新しく出したいときは新しいidに)
 //   date  : 表示する日付(YYYY-MM-DD)
 //   title : 見出し(短く)
-//   body  : 本文(\n で改行。 [表示する文字](https://...) と書くとリンクになります)
+//   body  : 本文(\n で改行。リンクや、太字・色・マーカーなどの飾りも使えます。書き方は下の「本文の飾り」)
 //   level : "info"(ふつう) / "important"(オレンジで目立たせる)
 //   until : (任意) この日を過ぎたら表示しない(YYYY-MM-DD)
 // ==========================================================
@@ -112,16 +121,80 @@
     try { injectBell(); injectBanner(); } catch (e) { console.error("お知らせの表示でエラー(通常のホームのまま表示します)", e); }
   };
 
-  // ---------- 一覧・詳細(モーダル) ----------
-  // 本文の整形: HTMLは無効にしたうえで、改行と [文字](https://...) のリンクだけ使えるようにする
-  function bodyHtml(text) {
-    return esc(text)
-      .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      .replace(/\n/g, "<br>");
+  // ---------- 本文の飾り ----------
+  // 安全のため、HTMLは無効にしたうえで、決まった記号だけを、決まった見た目に変える
+  const TEXT_COLORS = { 赤: "#E5484D", 青: "#2F7FE0", 緑: "#12A36A", 橙: "#E67700", 紫: "#8E4EC6", 灰: "#8E8E93" };
+  const MARK_COLORS = { 黄: "#FFE066", ピンク: "#FFC2D4", 緑: "#B7F0CF", 青: "#BFE0FF", 橙: "#FFD6A5" };
+  const SIZES = { 小: "0.85em", 大: "1.2em", 特大: "1.45em" };
+  const HEX = /^#[0-9A-Fa-f]{6}$/;
+
+  // {赤,大|文字} の「赤,大」を、見た目(style)に直す。分からない指定があれば null
+  function styleOf(keys) {
+    const parts = [];
+    for (const raw of keys.split(",")) {
+      const k = raw.trim();
+      if (TEXT_COLORS[k]) parts.push(`color:${TEXT_COLORS[k]}`);
+      else if (HEX.test(k)) parts.push(`color:${k}`);
+      else if (SIZES[k]) parts.push(`font-size:${SIZES[k]};line-height:1.5`);
+      else return null;
+    }
+    return parts.join(";");
   }
-  // 一覧に出す短い抜粋(リンクの記号などは外して、文字だけにする)
+
+  // 飾りの記号を、安全なHTMLに変える(入力は esc() ずみの文字)
+  function decorate(t) {
+    t = t.replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>")
+         .replace(/__([\s\S]+?)__/g, '<u class="nw-u">$1</u>')
+         .replace(/~~([\s\S]+?)~~/g, "<s>$1</s>")
+         .replace(/==([\s\S]+?)==/g, (m, inner) => {
+           let color = MARK_COLORS["黄"], body = inner;
+           const sep = inner.indexOf("|");
+           if (sep > 0 && sep <= 8) {
+             const k = inner.slice(0, sep).trim();
+             if (MARK_COLORS[k]) { color = MARK_COLORS[k]; body = inner.slice(sep + 1); }
+             else if (HEX.test(k)) { color = k; body = inner.slice(sep + 1); }
+           }
+           return `<mark class="nw-mk" style="background-image:linear-gradient(transparent 55%,${color} 55%)">${body}</mark>`;
+         });
+    // {色|文字} は、入れ子にも対応するため、内側から順に変える
+    for (let i = 0; i < 6; i++) {
+      const next = t.replace(/\{([^|{}\n]+)\|([^{}]+?)\}/g, (m, keys, body) => {
+        const st = styleOf(keys);
+        return st ? `<span style="${st}">${body}</span>` : m;
+      });
+      if (next === t) break;
+      t = next;
+    }
+    return t;
+  }
+
+  const LINK_RE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g;
+
+  // 本文の整形: HTMLは無効にしたうえで、飾り・リンク・改行だけを使えるようにする
+  function bodyHtml(text) {
+    const links = [];
+    // リンクのアドレスの中の記号が、飾りと間違われないように、先に取り出しておく
+    let t = esc(text).replace(LINK_RE, (m, label, url) => {
+      links.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">${decorate(label)}</a>`);
+      return `\u0000${links.length - 1}\u0000`;
+    });
+    t = decorate(t).replace(/\n/g, "<br>");
+    return t.replace(/\u0000(\d+)\u0000/g, (m, i) => links[Number(i)]);
+  }
+
+  // 一覧に出す短い抜粋(飾りの記号は外して、文字だけにする)
   function previewText(text) {
-    return text.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1").replace(/\s+/g, " ").trim();
+    let t = text.replace(LINK_RE, "$1");
+    for (let i = 0; i < 6; i++) {
+      const next = t.replace(/\{[^|{}\n]+\|([^{}]*)\}/g, "$1");
+      if (next === t) break;
+      t = next;
+    }
+    t = t.replace(/==(?:[^|=\n]{1,8}\|)?([\s\S]+?)==/g, "$1")
+         .replace(/\*\*([\s\S]+?)\*\*/g, "$1")
+         .replace(/__([\s\S]+?)__/g, "$1")
+         .replace(/~~([\s\S]+?)~~/g, "$1");
+    return t.replace(/\s+/g, " ").trim();
   }
 
   function openNews() {
