@@ -1,0 +1,33 @@
+/* 引っ張って更新(pull-refresh.js 用) */
+/* ブラウザ標準の「引っ張って更新」と重ならないようにする */
+html, body { overscroll-behavior-y: contain; }
+
+.ptr {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 900; height: 0;
+  display: flex; justify-content: center; pointer-events: none;
+  --ptr-y: 0px; --ptr-p: 0;
+}
+.ptr-circle {
+  position: absolute; top: calc(env(safe-area-inset-top, 0px) + 6px);
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; color: #12A36A;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+  opacity: 0; transform: translateY(calc(var(--ptr-y) - 48px)) scale(0.6);
+  transition: opacity 0.15s, transform 0.25s ease;
+}
+.ptr-drag .ptr-circle { transition: none; }
+.ptr-show .ptr-circle { opacity: var(--ptr-p); transform: translateY(calc(var(--ptr-y) - 8px)) scale(calc(0.6 + 0.4 * var(--ptr-p))); }
+.ptr-circle svg { transition: transform 0.2s; transform: rotate(calc(var(--ptr-p) * 90deg)); }
+/* 十分に引っ張ったら、矢印が上向きに */
+.ptr-ready .ptr-circle svg { transform: rotate(180deg); }
+/* 更新中は、くるくる */
+.ptr-loading .ptr-circle { opacity: 1; }
+.ptr-loading .ptr-circle svg { display: none; }
+.ptr-loading .ptr-circle::after {
+  content: ""; width: 20px; height: 20px; border-radius: 50%;
+  border: 3px solid #CDEBDD; border-top-color: #12A36A;
+  animation: ptr-spin 0.7s linear infinite;
+}
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ptr-loading .ptr-circle::after { animation-duration: 1.6s; } }
