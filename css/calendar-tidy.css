@@ -1,0 +1,32 @@
+/* ==========================================================
+   カレンダーの見た目の調整(calendar-tidy.css)  ★polish.css より後に読み込む★
+   ・日付と日付のすき間(空白)を、できるだけ小さく
+   ・「今日」が一目で分かるように(枠 + 日付が色つきの丸)
+   ・ホームの履歴カレンダーと、シフト追加のカレンダーの両方に効きます
+   ========================================================== */
+
+/* ---- すき間を小さく ---- */
+.calendar-grid { gap: 2px; }
+.calendar-cell { border-radius: 8px; padding-top: 6px; aspect-ratio: 0.85; }
+.calendar-dow { padding-bottom: 2px; }
+
+/* ---- 今日 ----
+   polish.css の影が、今日の枠を打ち消していたので、ここで枠を優先して付け直します */
+.calendar-cell.today:not(.empty) {
+  box-shadow: inset 0 0 0 2px var(--brand), 0 1px 4px rgba(20, 50, 40, 0.05);
+}
+.calendar-cell.today .cal-day-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.6em; height: 1.6em; margin: -0.2em 0 -0.3em;
+  border-radius: 50%; background: var(--brand); color: #fff;
+}
+/* 今日を選んだとき(セルが色つきになる)は、丸を白にして見えるように */
+.calendar-cell.today.selected .cal-day-num { background: #fff; color: var(--brand-dark); }
+.calendar-cell.today.selected:not(.empty) { box-shadow: inset 0 0 0 2px #fff, 0 0 0 1.5px var(--brand); }
+
+/* ---- PC ---- */
+@media (min-width: 1024px) {
+  .calendar-grid { gap: 3px; }
+  .calendar-cell { aspect-ratio: 1.05; border-radius: 10px; padding-top: 10px; }
+  .calendar-cell.today .cal-day-num { margin: -0.15em 0 -0.25em; }
+}
