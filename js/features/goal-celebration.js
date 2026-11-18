@@ -2,16 +2,14 @@
 // 月の目標を達成したときのお祝い  (js/features/goal-celebration.js)
 //
 // ・今月、実際に働いた分(今日までのシフト)の合計が、月収目標に届いたら、
-//   紙吹雪とメッセージでお祝いする(1か月に1回だけ)
+//   紙吹雪とメッセージでお祝いする
+// ・お祝いは、アプリを開いたときと、ほかの画面からホームに戻ってくるたびに出ます
+//   (ホームを開いたままの操作、たとえば月の切り替えでは出ません)
 // ・これからの予定のシフトは数えません(まだ働いていないので)
 // ・「動きを減らす」設定の端末では、紙吹雪なしでメッセージだけ出します
 // ・script.js は書き換えず、上から包んで変更しています
 // ==========================================================
 (function () {
-  const LS_META = "wage_meta"; // backup.js などと共用(それぞれ自分の項目だけ書き換える)
-  function loadMeta() { try { return JSON.parse(localStorage.getItem(LS_META)) || {}; } catch (e) { return {}; } }
-  function saveMeta(patch) { try { localStorage.setItem(LS_META, JSON.stringify({ ...loadMeta(), ...patch })); } catch (e) {} }
-
   // ---------- 今月、今日までに働いた分 ----------
   function earnedSoFar(ym) {
     const today = todayStr();
@@ -25,24 +23,36 @@
     return sum;
   }
 
+  // 「ホームに来た」ときだけ、お祝いを出す目印(アプリを開いた直後も、来たことにする)
+  let arrived = true;
+
+  // 戻り値: true = 判断が終わった(出した/目標なし/未達成)  false = まだ出せない状況なので、あとでもう一度
   function check() {
-    if (state.tab !== "home" || homeMonthOffset !== 0) return;
+    if (state.tab !== "home" || homeMonthOffset !== 0) return false; // 過去・未来の月を見ているときは、今月のホームに戻るまで待つ
+    if (document.getElementById("disclaimer-ok") || document.getElementById("gc-overlay")) return false; // 同意画面などの最中は出さない
     const goal = state.monthlyGoal;
-    if (!(goal > 0)) return;
-    if (document.getElementById("disclaimer-ok") || document.getElementById("gc-overlay")) return; // 同意画面などの最中は出さない
+    if (!(goal > 0)) return true;
     const now = new Date();
     const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    if (loadMeta().goalCelebrated === ym) return;
     const earned = earnedSoFar(ym);
-    if (earned < goal) return;
-    saveMeta({ goalCelebrated: ym });
+    if (earned < goal) return true;
     setTimeout(() => celebrate(goal, earned, now.getMonth() + 1), 350); // ホームが表示されてから
+    return true;
   }
+
+  // ほかの画面からホームに切り替えたら、「来た」ことにする(ホームのまま同じタブを押しても、出さない)
+  const baseSwitchTab = switchTab;
+  switchTab = function (tab, keepEditing) {
+    if (tab === "home" && state.tab !== "home") arrived = true;
+    return baseSwitchTab(tab, keepEditing);
+  };
 
   const baseRenderHome = renderHome;
   renderHome = function () {
     baseRenderHome();
-    try { check(); } catch (e) { console.error("目標達成のお祝いでエラー(通常のホームのまま表示します)", e); }
+    try {
+      if (arrived && check()) arrived = false;
+    } catch (e) { console.error("目標達成のお祝いでエラー(通常のホームのまま表示します)", e); }
   };
 
   // ---------- お祝いの表示 ----------
