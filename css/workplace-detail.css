@@ -1,0 +1,81 @@
+/* 勤務先タブの整理(workplace-detail.js 用)  ★polish.css のあとに読み込む★ */
+
+/* 編集の画面の「削除」は使わない(削除は、開いた画面の一番下) */
+#wp-modal-delete { display: none !important; }
+
+/* ---------- 一覧: 横にスライドして削除 ---------- */
+.wd-swipe { position: relative; border-radius: 14px; overflow: hidden; margin-bottom: 10px; }
+.wd-swipe .workplace-card { margin-bottom: 0; position: relative; z-index: 1; touch-action: pan-y; transition: transform 0.22s ease; will-change: transform; }
+.wd-swipe.is-drag .workplace-card { transition: none; }
+.wd-swipe-del {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 88px; border: none; background: #FF3B30; color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.wd-swipe-del:active { background: #E0332A; }
+/* 開いていないときは、赤いボタンを隠しておく(角から、はみ出して見えないように) */
+.wd-swipe:not(.is-open):not(.is-drag) .wd-swipe-del { visibility: hidden; transition: visibility 0s 0.22s; }
+/* 画面が広いとき(タブレット・PC)は、スライドしないので、赤い部分は出さない */
+@media (hover: hover) and (pointer: fine) { .wd-swipe-del { display: none; } }
+#workplace-list .wd-swipe .workplace-card { margin-bottom: 0; }
+
+/* ---------- 開いた画面 ---------- */
+.wd-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 16px 20px 6px; font-size: 12px; color: #8E8E93; letter-spacing: .3px;
+}
+.wd-head-rules { padding-bottom: 0; margin-top: 4px; }
+.wd-edit-hint { font-size: 12px; color: var(--brand-dark, #0B7F52); font-weight: 600; letter-spacing: 0; }
+.wd-info {
+  display: block; width: 100%; text-align: left; border: none; font-family: inherit; color: inherit; cursor: pointer;
+  padding: 4px 16px; -webkit-tap-highlight-color: transparent; transition: background-color 0.12s ease;
+}
+.wd-info:active { background: #F2F2F7; }
+.wd-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 11px 0; border-bottom: 0.5px solid #E5E5EA; }
+.wd-row:last-child { border-bottom: none; }
+.wd-k { font-size: 14px; color: #636366; flex: none; }
+.wd-v { font-size: 15px; font-weight: 600; color: #1C1C1E; text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#wd-danger { padding: 28px 20px 8px; }
+#wd-danger .btn-delete-wide { margin-top: 0; }
+@media (hover: hover) { .wd-info:hover { background: #F7F7FA; } }
+
+/* ---------- 下から出てくる確認 ---------- */
+.wd-sheet-overlay {
+  position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, 0); display: flex; align-items: flex-end; justify-content: center;
+  transition: background-color 0.22s ease;
+}
+.wd-sheet-overlay.is-open { background: rgba(0, 0, 0, 0.4); }
+.wd-sheet {
+  width: 100%; max-width: 480px; background: #fff; border-radius: 20px 20px 0 0;
+  padding: 10px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.12);
+}
+.wd-sheet-overlay.is-open .wd-sheet { transform: translateY(0); }
+.wd-grab { width: 36px; height: 4px; border-radius: 2px; background: #D1D1D6; margin: 0 auto 14px; }
+.wd-sheet-title { font-size: 17px; font-weight: 700; text-align: center; line-height: 1.5; overflow-wrap: anywhere; }
+.wd-sheet-msg { font-size: 13px; color: #636366; text-align: center; line-height: 1.7; margin: 6px 0 18px; }
+.wd-sheet-ok, .wd-sheet-cancel {
+  display: block; width: 100%; height: 50px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
+}
+.wd-sheet-ok { background: #FF3B30; color: #fff; }
+.wd-sheet-ok:active { background: #E0332A; }
+.wd-sheet-cancel { background: #F2F2F7; color: #1C1C1E; margin-top: 10px; }
+.wd-sheet-cancel:active { background: #E5E5EA; }
+/* PC: 画面の下ではなく、真ん中に出す */
+@media (min-width: 1024px) {
+  .wd-sheet-overlay { align-items: center; }
+  .wd-sheet { border-radius: 18px; max-width: 400px; padding-bottom: 20px; transform: translateY(16px); opacity: 0; transition: transform 0.22s ease, opacity 0.22s ease; }
+  .wd-sheet-overlay.is-open .wd-sheet { transform: none; opacity: 1; }
+  .wd-grab { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .wd-sheet, .wd-sheet-overlay, .wd-swipe .workplace-card { transition: none; } }
+
+/* 削除したあとの、ひとこと */
+#wd-toast {
+  position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 12px); z-index: 90;
+  max-width: calc(100% - 40px); padding: 10px 16px; border-radius: 12px; background: rgba(28, 28, 30, 0.92); color: #fff;
+  font-size: 13px; line-height: 1.5; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+}
+#wd-toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+@media (min-width: 1024px) { #wd-toast { bottom: 32px; } }
