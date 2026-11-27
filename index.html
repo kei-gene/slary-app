@@ -13,25 +13,14 @@
 <meta name="apple-mobile-web-app-title" content="かせログ">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<!-- CSS: 色の設定 → 土台 → 機能ごと → 仕上げ(順番が大事です) -->
+<!-- CSS: 色の設定 → 土台 → 画面ごと(順番が大事です) -->
 <link rel="stylesheet" href="css/theme.css">
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/backup.css">
-<link rel="stylesheet" href="css/premium.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/home.css">
 <link rel="stylesheet" href="css/wall.css">
-<link rel="stylesheet" href="css/home-tidy.css">
-<link rel="stylesheet" href="css/settings-tidy.css">
-<link rel="stylesheet" href="css/onboarding.css">
-<link rel="stylesheet" href="css/rate-history.css">   <!-- polish.css の前 -->
-<link rel="stylesheet" href="css/celebrate.css">      <!-- polish.css の前 --> 
-<link rel="stylesheet" href="css/history-move.css">
-<link rel="stylesheet" href="css/polish.css">
-<link rel="stylesheet" href="css/workplace-detail.css">
-<link rel="stylesheet" href="css/calendar-tidy.css">
-<link rel="stylesheet" href="css/home-compact.css">
-<link rel="stylesheet" href="css/news.css"> 
-<link rel="stylesheet" href="css/pull-refresh.css">
-<link rel="stylesheet" href="css/feedback.css">
+<link rel="stylesheet" href="css/workplaces.css">
+<link rel="stylesheet" href="css/settings.css">
+<link rel="stylesheet" href="css/extras.css">
 </head>
 <body>
 
@@ -50,6 +39,7 @@
 
   <!-- 履歴 -->
   <section id="screen-history" class="screen">
+    <button type="button" id="hs-back" class="hs-back">‹ 設定</button>
     <div class="header-row">
       <span class="header-title">勤務履歴</span>
       <div class="segment view-segment" id="history-view-segment">
@@ -67,11 +57,6 @@
       <span class="nav-btn" id="add-cancel">キャンセル</span>
       <span class="nav-title" id="add-title">シフト追加</span>
       <span class="nav-btn-placeholder"></span>
-    </div>
-
-    <div class="segment mode-segment" id="add-mode-segment">
-      <button class="segment-btn active" id="mode-single" data-mode="single">単発</button>
-      <button class="segment-btn" id="mode-multi" data-mode="multi">複数日まとめて</button>
     </div>
 
     <div id="multi-date-fields" class="list-pad hidden">
@@ -150,7 +135,7 @@
     <div id="rates-content"></div>
   </section>
 
-  <!-- 設定 -->
+  <!-- 設定: よく使うもの(目標・テンプレート・バックアップ)を上に、あまり触らないものは「詳細設定」にたたんでいます -->
   <section id="screen-settings" class="screen">
     <div class="header-title">設定</div>
 
@@ -164,32 +149,88 @@
       </div>
     </div>
 
-    <div class="section-label">祝日設定</div>
-    <div class="tmpl-hint" style="padding:0 20px 8px">日本の祝日は自動で登録されます。不要な日は削除、会社独自の休みなどは手動で追加できます。</div>
-    <div class="list-pad">
-      <div class="card" id="holiday-list"></div>
-      <div class="holiday-add-row">
-        <input type="date" id="holiday-input">
-        <button id="holiday-add-btn" class="btn-small">追加</button>
-      </div>
-    </div>
-
-    <div class="section-label">曜日の区分</div>
-    <div class="tmpl-hint" style="padding:0 20px 8px">時給ルールの「月〜土」「日曜・祝日」をこの区分に合わせて変えられます。オンにした曜日が休日側の時給になります。</div>
-    <div class="weekday-picker" id="dow-group-picker" style="padding:0 20px 4px"></div>
-    <div class="tmpl-hint" id="dow-group-summary" style="padding:4px 20px 8px"></div>
-
     <div class="section-label">テンプレート</div>
-    <div class="tmpl-hint" style="padding:0 20px 8px">シフト追加画面でテンプレートを選ぶと、勤務先・出勤・退勤が自動で入力されます。</div>
+    <div class="tmpl-hint" style="padding:0 20px 8px">シフト追加画面で選ぶと、勤務先と出退勤の時間が自動で入ります。</div>
     <div class="list-pad">
       <div class="card" id="template-list"></div>
       <button class="rate-add-btn" id="template-add-btn">＋ テンプレートを追加</button>
     </div>
 
-    <div class="section-label">シフト追加画面のスタイル</div>
-    <div class="list-pad">
-      <div class="card" id="add-style-list"></div>
+    <!-- 勤務履歴(下のタブにはないので、ここから開く) -->
+    <div id="hs-entry" class="list-pad hs-entry-wrap">
+      <button type="button" class="card hs-entry" id="hs-entry-btn">
+        <span class="hs-entry-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+        <span class="hs-entry-text">
+          <span class="hs-entry-title">勤務履歴</span>
+          <span class="hs-entry-sub">これまでのシフトを見る・直す・消す</span>
+        </span>
+        <span class="hs-entry-arrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
     </div>
+
+    <div class="section-label">バックアップ</div>
+    <div class="tmpl-hint" style="padding:0 20px 8px">データはこの端末内だけに保存されます。機種変更などに備えて、定期的に保存しましょう。</div>
+    <div class="list-pad">
+      <div class="card pad-14">
+        <div id="backup-status" class="backup-status"></div>
+        <button class="btn-primary" id="backup-export-btn">バックアップを保存</button>
+        <div class="backup-sub-row">
+          <button class="btn-confirm-cancel backup-sub-btn" id="backup-copy-btn">テキストをコピー</button>
+          <button class="btn-confirm-cancel backup-sub-btn" id="backup-import-btn">ファイルから復元</button>
+        </div>
+        <div class="backup-paste-toggle" id="backup-paste-toggle">コピーしたテキストから復元する</div>
+        <div id="backup-paste-area" class="hidden">
+          <textarea id="backup-paste-text" class="backup-textarea" placeholder="コピーしたバックアップを貼り付け"></textarea>
+          <button class="btn-confirm-cancel backup-sub-btn" id="backup-paste-go" style="width:100%">貼り付けた内容で復元</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="st-spacer"></div>
+
+    <!-- 詳細設定(たたんでおく) -->
+    <div class="st-fold" id="st-detail">
+      <button type="button" class="st-fold-head" aria-expanded="false">
+        <span class="st-fold-text">
+          <span class="st-fold-title">詳細設定</span>
+          <span class="st-fold-sub">祝日・曜日の区分</span>
+        </span>
+        <span class="chevron-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+      </button>
+      <div class="st-fold-body hidden">
+        <div class="section-label">祝日設定</div>
+        <div class="tmpl-hint" style="padding:0 20px 8px">日本の祝日は自動で登録されます。不要な日の削除や、独自の休みの追加もできます。</div>
+        <div class="list-pad">
+          <div class="card" id="holiday-list"></div>
+          <div class="holiday-add-row">
+            <input type="date" id="holiday-input">
+            <button id="holiday-add-btn" class="btn-small">追加</button>
+          </div>
+        </div>
+
+        <div class="section-label">曜日の区分</div>
+        <div class="tmpl-hint" style="padding:0 20px 8px">オンにした曜日は、休日(祝日)と同じ時給ルールになります。</div>
+        <div class="weekday-picker" id="dow-group-picker" style="padding:0 20px 4px"></div>
+        <div class="tmpl-hint" id="dow-group-summary" style="padding:4px 20px 8px"></div>
+      </div>
+    </div>
+
+    <!-- ご利用にあたって(免責事項。文章は disclaimer-text.js) -->
+    <div class="st-fold" id="st-disclaimer">
+      <button type="button" class="st-fold-head" aria-expanded="false">
+        <span class="st-fold-text">
+          <span class="st-fold-title">ご利用にあたって</span>
+          <span class="st-fold-sub">免責事項など</span>
+        </span>
+        <span class="chevron-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+      </button>
+      <div class="st-fold-body hidden">
+        <div class="list-pad">
+          <div class="card disclaimer-card" id="disclaimer-list"></div>
+        </div>
+      </div>
+    </div>
+    <!-- 一番下に「ご意見・不具合」とバージョン表示が自動で入ります(settings.js) -->
   </section>
 
   <!-- テンプレート編集モーダル -->
@@ -271,7 +312,6 @@
       <input type="number" id="wp-modal-payday" class="modal-input full" min="1" max="31" style="margin-top:8px">
 
       <button id="wp-modal-save" class="btn-primary" style="margin-top:16px">保存</button>
-      <button id="wp-modal-delete" class="btn-delete-wide">この勤務先を削除</button>
     </div>
   </div>
 
@@ -294,9 +334,6 @@
     <button class="tab-item" data-tab="home">
       <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="tab-label">ホーム</span>
     </button>
-    <button class="tab-item" data-tab="history">
-      <span class="tab-icon"><svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span><span class="tab-label">履歴</span>
-    </button>
     <button class="tab-item tab-item-center" data-tab="add">
       <span class="tab-center-circle"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="tab-center-label">シフト追加</span></span>
     </button>
@@ -311,27 +348,14 @@
 </div>
 
 <!-- JS: 読み込む順番が大事です(上から順に実行されます)
-     1. 免責の文章  2. 土台(script.js)  3. 機能(下の順番のまま) -->
-<script src="js/app-config.js"></script>
+     1. 設定  2. 免責の文章  3. 土台(script.js)  4. 画面・機能(下の順番のまま) -->
+<script src="js/config.js"></script>
 <script src="js/disclaimer-text.js"></script>
 <script src="js/script.js"></script>
-<script src="js/features/format.js"></script>
-<script src="js/features/backup.js"></script>
-<script src="js/features/premium.js"></script>
-<script src="js/features/rate-history.js"></script>
+<script src="js/features/home.js"></script>
 <script src="js/features/wall.js"></script>
-<script src="js/features/home-tidy.js"></script>
-<script src="js/features/settings-tidy.js"></script>
-<script src="js/features/scroll-reset.js"></script>
-<script src="js/features/unify-add.js"></script>
-<script src="js/features/add-calendar-sync.js"></script>
-<script src="js/features/onboarding.js"></script>
-<script src="js/features/news.js"></script>
-<script src="js/features/goal-celebration.js"></script>
-<script src="js/features/history-move.js"></script> 
-<script src="js/features/pull-refresh.js"></script>
-<script src="js/features/feedback.js"></script>
-<script src="js/features/workplace-detail.js"></script>
-<script src="js/features/home-compact.js"></script>
+<script src="js/features/workplaces.js"></script>
+<script src="js/features/extras.js"></script>
+<script src="js/features/settings.js"></script>
 </body>
 </html>

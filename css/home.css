@@ -1,0 +1,187 @@
+/* ==========================================================
+   home.css
+   ホーム画面(今月の稼ぎカード・給料日/年収の壁タイル・カレンダー)
+   ========================================================== */
+
+/* ---- 月の切り替え行(スマホ・PC共通) ---- */
+#home-content { touch-action: pan-y; }
+.home-month { padding: 0 20px 4px; font-size: 13px; color: #8E8E93; }
+.home-month-row { display: flex; justify-content: space-between; align-items: center; padding: 28px 20px 4px 20px; }
+.home-month-row .home-month { padding: 0; }
+.month-segment .segment-btn { height: 32px; font-size: 12px; padding: 0 14px; flex: none; }
+.hm-payout-amt .amt-yen { font-size: 0.6em; }
+
+/* ---- PC: 2列のレイアウト ---- */
+@media (min-width: 1024px) {
+  #home-content { display: grid; grid-template-columns: 1.3fr 1fr; grid-auto-flow: row dense; column-gap: 20px; align-items: start; padding: 0 20px; }
+  #home-content > * { padding-left: 0; padding-right: 0; margin-left: 0; margin-right: 0; }
+  #home-content > .home-month-row { grid-column: 1 / -1; padding-top: 24px; padding-right: 0; }
+  #home-content > .home-month-row .home-month { font-size: 15px; }
+  #home-content > .bottom-pad { grid-column: 1 / -1; max-width: 320px; padding-left: 0; padding-right: 0; }
+}
+
+/* ---- ホームの整理 (home-tidy) ---- */
+
+/* 1枚にまとめた「予想給与」カード */
+.hm-main { padding: 4px 20px 12px; }
+.hm-card { background: #fff; border-radius: 16px; padding: 16px 18px; }
+.hm-label { font-size: 13px; color: #636366; }
+.hm-amount { font-size: 40px; font-weight: 700; line-height: 1.15; margin-top: 2px; font-variant-numeric: tabular-nums; word-break: keep-all; }
+.hm-toggle {
+  border: none; background: none; color: var(--brand-dark); font-size: 12px; font-family: inherit;
+  cursor: pointer; padding: 6px 0 6px 8px; -webkit-tap-highlight-color: transparent;
+}
+.hm-breakdown { margin-top: 10px; border-top: 0.5px solid #E5E5EA; }
+.hm-bd-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 0.5px solid #F2F2F7; }
+.hm-bd-row:last-child { border-bottom: none; }
+
+/* 目標(カードの中の細いバー) */
+
+/* 勤務先が未登録のとき */
+.hm-empty { margin-top: 14px; padding: 12px; background: #F2F2F7; border-radius: 12px; font-size: 13px; color: #636366; line-height: 1.6; }
+.hm-empty-btn {
+  display: block; width: 100%; height: 42px; margin-top: 10px; border: none; border-radius: 10px;
+  background: var(--brand); color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;
+}
+
+/* 右側(PCでは右の列): 次の給料日 + 年収の壁の注意 */
+.hm-side { padding: 0 20px 12px; display: flex; flex-direction: column; gap: 10px; }
+.hm-side:empty { display: none; }
+
+.hm-payout { background: #fff; border-radius: 14px; padding: 10px 16px 8px; }
+.hm-payout-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #8E8E93; }
+.hm-po + .hm-po { border-top: 0.5px solid #E5E5EA; }
+.hm-payout-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0 4px; }
+.hm-payout-l { min-width: 0; flex: 1; }
+.hm-payout-date { font-size: 15px; font-weight: 700; }
+.hm-payout-wp { font-size: 12px; color: #8E8E93; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-payout-amt { font-size: 18px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hm-payout-period { font-size: 11px; color: #8E8E93; padding-bottom: 6px; }
+
+/* 年収の壁の注意(wall.js v2.1 と対): 1行目=壁の名前、2行目=あと◯円 */
+
+/* ホームのカレンダー: 金額と勤務時間の両方を表示(「どれだけ頑張ったか」の見える化)。
+   時間は少し読みやすい色・大きさにする */
+#home-calendar .cal-day-hours { color: #636366; font-size: clamp(7px, 2.2vw, 9px); }
+
+@media (min-width: 600px) {
+  .hm-amount { font-size: 50px; }
+.hm-label { font-size: 14px; }
+  .hm-payout-date { font-size: 16px; }
+}
+
+/* PC: 左に給与カード、右に給料日と注意(既存のホームの2列表示に合わせる) */
+@media (min-width: 1024px) {
+  #home-content > .hm-main { padding: 0 0 16px; }
+  #home-content > .hm-side { padding: 0 0 16px; }
+  .hm-card { padding: 24px 28px; }
+  .hm-amount { font-size: 56px; }
+  .hm-payout { padding: 14px 20px 10px; }
+  .hm-payout-amt { font-size: 20px; }
+}
+
+/* ---- ミントのデザイン: 「今月の予想給与」を色つきの大きなカードに ---- */
+.hm-card {
+  background: linear-gradient(135deg, var(--brand-grad-1), var(--brand-grad-2));
+  color: #fff; border-radius: 22px; padding: 20px 20px 18px;
+  box-shadow: 0 10px 24px var(--brand-shadow);
+}
+.hm-card .hm-label { color: rgba(255, 255, 255, 0.88); font-weight: 500; }
+.hm-card .hm-amount { color: #fff; font-size: 46px; font-weight: 800; letter-spacing: -0.01em; }
+.hm-card .hm-toggle { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+.hm-card .hm-breakdown { border-top-color: rgba(255, 255, 255, 0.3); }
+.hm-card .hm-bd-row { border-bottom-color: rgba(255, 255, 255, 0.18); }
+/* 達成したときは、コインの金色でお祝い */
+.hm-card .hm-empty { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.hm-card .hm-empty-btn { background: #fff; color: var(--brand-dark); box-shadow: none; }
+@media (min-width: 600px) {
+  .hm-card .hm-amount { font-size: 54px; }
+}
+@media (min-width: 1024px) {
+  .hm-card { padding: 28px 32px; }
+  .hm-card .hm-amount { font-size: 62px; }
+}
+
+/* ---- ホームの「今日まで」表示と2色の目標バー (home-tidy.css の一番下に追加) ---- */
+
+/* 「予定込み」の小さな印 */
+.hm-tag { font-size: 11px; margin-left: 6px; background: rgba(255, 255, 255, 0.22); border-radius: 6px; padding: 1px 7px; }
+
+/* 「今日まで ¥68,000」の1行 */
+
+/* 目標バー: 薄い色(予定を足した分)の上に、濃い色(今日まで)を重ねる */
+
+/* ==========================================================
+   ホームをすっきり見せる(home-compact.css)  ★polish.css・calendar-tidy.css より後に読み込む★
+   ========================================================== */
+
+/* ---- 緑のカード: 金額の右に 勤務時間・日数 ---- */
+.hm-card.hc-card { padding: 18px 20px 16px; }
+.hc-card .hc-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 2px; }
+.hc-card .hc-row .hm-amount { margin-top: 0; min-width: 0; font-size: clamp(32px, 11.5vw, 44px); }
+.hc-ht { flex: none; text-align: right; font-size: 12px; line-height: 1.55; padding-bottom: 6px; white-space: nowrap; color: rgba(255, 255, 255, 0.93); }
+.hc-ht .hm-n { font-size: 17px; color: #fff; }
+.hc-bd { display: block; margin-top: 2px; padding: 4px 0; font-size: 12px; border: none; background: none; font-family: inherit; color: #fff; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.hc-card .hm-breakdown { margin-top: 6px; }
+
+/* ---- 目標: バー + 今の稼ぎ / 目標 ---- */
+.hc-goal { margin-top: 12px; }
+.hc-bar { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.3); overflow: hidden; }
+.hc-bar i { display: block; height: 100%; background: #fff; border-radius: 4px; }
+.hc-gt { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; margin-top: 7px; color: rgba(255, 255, 255, 0.95); }
+.hc-gt b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.hc-done .hc-gt span:first-child { color: #FFE9A8; font-weight: 700; }
+.hc-nogoal { margin-top: 10px; }
+.hc-nogoal .hc-gt { margin-top: 0; }
+
+/* ---- 給料日・年収の壁: 小さな2タイル ---- */
+.hm-side .hc-tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.hc-tiles.hc-one { grid-template-columns: minmax(0, 1fr); }
+.hc-tile {
+  display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 100%;
+  background: #fff; border: none; border-radius: 16px; padding: 12px 14px; font-family: inherit; color: #1C1C1E;
+  box-shadow: 0 2px 10px rgba(20, 50, 40, 0.06); cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+}
+.hc-tile:active { transform: scale(0.98); }
+.hc-tile small { display: flex; justify-content: space-between; width: 100%; font-size: 11.5px; color: #8E8E93; }
+.hc-tile small em { font-style: normal; color: var(--brand-dark); }
+.hc-tile b { display: block; font-size: 19px; font-weight: 800; margin-top: 3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hc-tile .hc-s { display: block; width: 100%; font-size: 11.5px; color: #636366; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc-wbar { width: 100%; height: 4px; border-radius: 2px; background: #E5E5EA; margin-top: auto; overflow: hidden; }
+.hc-wall .hc-s { margin-bottom: 8px; }
+.hc-wbar i { display: block; height: 100%; background: var(--brand); border-radius: 2px; }
+.hc-big.hc-small-text { font-size: 14px; line-height: 1.4; white-space: normal; }
+.hc-tiles .hc-detail { grid-column: 1 / -1; }
+
+/* ---- カレンダー: 独立した白いカード ---- */
+#screen-home .section-label { padding: 18px 24px 8px; }
+#home-calendar.list-pad {
+  margin: 0 20px; padding: 14px 12px 12px; background: #fff; border-radius: 22px;
+  box-shadow: 0 4px 16px rgba(20, 50, 40, 0.06);
+}
+#home-calendar .calendar-cell:not(.empty):not(.selected):not(.sat):not(.sun-holiday) { background: #F4F8F6; }
+#home-calendar .calendar-cell:not(.empty):not(.today) { box-shadow: none; }
+
+@media (min-width: 600px) {
+  .hc-card .hc-row .hm-amount { font-size: 54px; }
+  .hc-ht { font-size: 14px; }
+  .hc-ht .hm-n { font-size: 20px; }
+  .hc-gt { font-size: 14px; }
+  .hc-tile b { font-size: 21px; }
+}
+@media (min-width: 1024px) {
+  .hm-card.hc-card { padding: 26px 30px 24px; }
+  .hc-card .hc-row .hm-amount { font-size: 60px; }
+  #home-calendar.list-pad { margin: 0 20px; padding: 20px 20px 18px; }
+  #screen-home .section-label { padding-left: 28px; }
+}
+
+/* 開いた給料日の一覧: 角を丸く、うっすら影(ほかのカードとそろえる) */
+.hm-payout { border-radius: 16px; box-shadow: 0 2px 10px rgba(20, 50, 40, 0.06); }
+
+/* 年収の壁タイルの色(注意・超過) */
+.hc-wall-warn .hc-wbar i { background: #FF9500; }
+.hc-wall-over .hc-wbar i { background: #FF3B30; }
+.hc-wall-warn .hc-big { color: #B45309; }
+.hc-wall-over .hc-big { color: #D70015; }
