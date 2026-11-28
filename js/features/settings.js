@@ -294,7 +294,7 @@
         <a class="fb-btn" id="fb-send" href="${esc(urlReady() ? FEEDBACK_FORM_URL : "#")}" target="_blank" rel="noopener noreferrer">
           <span>ご意見・不具合を送る</span>${ICON_EXT}
         </a>
-        <div class="fb-note" id="fb-note" role="status" hidden>フォームのURLが未設定です(feedback.js の先頭で設定します)</div>
+        <div class="fb-note" id="fb-note" role="status" hidden>フォームのURLが未設定です。</div>
       </div>
       <div class="fb-version" id="fb-version">${esc(versionText())}</div>`;
     wrap.querySelector("#fb-send").addEventListener("click", (e) => {
