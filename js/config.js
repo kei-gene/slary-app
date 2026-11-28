@@ -11,7 +11,7 @@ window.APP = {
 };
 
 // ---------- ご意見・不具合フォーム / バージョン表示(設定タブの一番下) ----------
-const FEEDBACK_FORM_URL = "https://forms.gle/ここにフォームのURL"; // ← GoogleフォームのURL
+const FEEDBACK_FORM_URL = "https://forms.gle/1k86812jr1jLf3Mz9"; // ← GoogleフォームのURL
 const APP_STAGE = "ベータ版";   // 表示する段階の名前
 const APP_VERSION = "0.1";    // バージョン番号
 
